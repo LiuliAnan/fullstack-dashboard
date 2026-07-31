@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
@@ -24,15 +24,21 @@ export default function MuiThemeProvider({ children }: { children: React.ReactNo
     return cache;
   });
 
+  // 跟踪已注入的样式，避免流式渲染时重复注入导致 hydration 不匹配
+  const inserted = useRef<Set<string>>(new Set());
+
   useServerInsertedHTML(() => {
-    const names = Object.keys(cache.inserted);
-    if (names.length === 0) return null;
+    const newNames = Object.keys(cache.inserted).filter(
+      (name) => !inserted.current.has(name),
+    );
+    if (newNames.length === 0) return null;
+    newNames.forEach((name) => inserted.current.add(name));
     return (
       <style
         key={cache.key}
-        data-emotion={`${cache.key} ${names.join(' ')}`}
+        data-emotion={`${cache.key} ${newNames.join(' ')}`}
         dangerouslySetInnerHTML={{
-          __html: names.map((name) => cache.inserted[name]).join(' '),
+          __html: newNames.map((name) => cache.inserted[name]).join(' '),
         }}
       />
     );

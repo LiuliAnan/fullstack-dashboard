@@ -22,9 +22,13 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      clearToken();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      // 登录接口的 401 是凭据错误，不跳转，让组件显示错误提示
+      const url = error.config?.url || '';
+      if (!url.includes('/api/auth/login')) {
+        clearToken();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
