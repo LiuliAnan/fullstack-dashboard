@@ -26,6 +26,7 @@
 - **认证**：注册 / 登录 / JWT 鉴权
 - **用户管理**：表格展示、姓名搜索、role 多选过滤、添加/编辑/删除、批量删除、分页
 - **公司管理**：可折叠表格、公司名搜索、level 多选过滤、盈利效率着色、分页
+- **数据可视化 Dashboard**：4 张数据卡（大数字换算）、环形图（level 占比+交互）、折线图（累积增长趋势+交互）
 - **数据导入**：启动时自动从 CSV 导入 2000 条公司 + 关系数据
 - **可扩展导航栏**：Tab 数组定义，新增页面只需加一行
 
@@ -68,6 +69,10 @@ project1/
 │       │   ├── company.service.ts    # CRUD + 联表 + 盈利效率
 │       │   ├── seed.service.ts       # CSV 启动时自动导入
 │       │   └── dto/                  # create-company / update-company
+│       ├── dashboard/                # 数据可视化模块
+│       │   ├── dashboard.module.ts
+│       │   ├── dashboard.controller.ts # GET /api/dashboard
+│       │   └── dashboard.service.ts  # 聚合计算（数据卡+level分布+年份趋势）
 │       └── common/guards/jwt-auth.guard.ts
 │
 └── frontend/                         # Next.js 前端 (:3000)
@@ -83,12 +88,15 @@ project1/
         │   ├── NavBar.tsx / AuthGuard.tsx
         │   ├── UserTable.tsx / UserToolbar.tsx / UserFormDialog.tsx
         │   ├── CompanyTable.tsx / CompanyToolbar.tsx
+        │   ├── DashboardStatsCards.tsx / DashboardLevelChart.tsx / DashboardFoundedTrend.tsx
         │   └── providers/MuiThemeProvider.tsx
         ├── lib/
         │   ├── api-client.ts         # Axios 封装 (token 拦截器)
         │   ├── auth.ts               # token 管理
         │   ├── constants.ts          # 共享常量 (role/status/level)
-        │   └── profit-color.ts       # 盈利效率着色函数
+        │   ├── format.ts            # 大数字换算 (K/M/B)
+        │   ├── profit-color.ts       # 盈利效率着色函数
+        │   └── dashboard-mock.ts     # Dashboard mock 数据（开发用）
         └── types/api.ts
 ```
 
@@ -189,6 +197,25 @@ npm run dev
 
 > 盈利效率 = `annual_revenue / employees`，后端计算后返回 `profit_efficiency` 字段。
 
+### Dashboard 接口 `/api/dashboard`
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | /api/dashboard | 一次返回所有可视化数据（后端计算聚合） |
+
+**响应结构：**
+```json
+{
+  "stats": { "companyCount": 2000, "totalRevenue": 182779175, "countryCount": 8, "employeeCount": 699119 },
+  "levelDistribution": [{ "level": 1, "count": 1, "percentage": 0.05 }, ...],
+  "foundedTrend": [{ "year": 1900, "cumulative": 1 }, ...]
+}
+```
+
+- **stats**：4 个汇总指标（COUNT / SUM / COUNT DISTINCT）
+- **levelDistribution**：各 level 占比（GROUP BY level + 百分比计算）
+- **foundedTrend**：按成立年份的累积公司数（GROUP BY year + 遍历累加）
+
 ---
 
 ## 数据库表结构
@@ -239,7 +266,7 @@ npm run dev
 |---|---|---|---|
 | `/` | 重定向 /login | 否 | - |
 | `/login` `/signup` | 登录 / 注册 | 否 | 认证 |
-| `/dashboard` | 仪表盘 | 是 | 占位 |
+| `/dashboard` | 仪表盘 | 是 | 数据卡 + 环形图 + 折线图（Chart.js 可视化） |
 | `/company` | 公司管理 | 是 | 可折叠表格 + 过滤搜索 + 盈利效率着色 |
 | `/user` | 用户管理 | 是 | 表格 CRUD + 批量删除 + 过滤搜索 |
 | `/order` | 订单管理 | 是 | 占位 |

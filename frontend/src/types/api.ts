@@ -42,6 +42,36 @@ export interface Company {
   profit_efficiency?: number;
 }
 
+// ===== Dashboard 数据结构 =====
+
+// 数据卡：4 个汇总指标
+export interface DashboardStats {
+  companyCount: number;
+  totalRevenue: number;
+  countryCount: number;
+  employeeCount: number;
+}
+
+// 环形图：各 level 公司占比
+export interface LevelDistributionItem {
+  level: number;
+  count: number;
+  percentage: number;
+}
+
+// 折线图：按成立年份的累积公司数
+export interface FoundedTrendItem {
+  year: number;
+  cumulative: number;
+}
+
+// dashboard 合并响应
+export interface DashboardData {
+  stats: DashboardStats;
+  levelDistribution: LevelDistributionItem[];
+  foundedTrend: FoundedTrendItem[];
+}
+
 export interface SignUpDto {
   email: string;
   password: string;
