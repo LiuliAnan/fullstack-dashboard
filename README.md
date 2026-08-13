@@ -1,6 +1,6 @@
 # 全栈 Dashboard 应用
 
-基于 **Next.js 16 + MUI 9 + NestJS 11 + PostgreSQL** 的全栈项目，实现了用户注册/登录认证、可扩展导航栏，以及用户管理和公司管理两个数据表格页面（含 CSV 数据导入）。
+基于 **Next.js 16 + MUI 9 + NestJS 11 + PostgreSQL/pgvector** 的全栈项目，实现 JWT 认证、用户和公司管理、CSV 数据导入，以及可交互的数据可视化 Dashboard。
 
 ---
 
@@ -14,6 +14,9 @@
 | 后端框架 | NestJS | 11.x |
 | ORM | TypeORM | 1.x |
 | 数据库 | PostgreSQL 16 | Docker |
+| 向量扩展 | pgvector | Docker 镜像内置，迁移自动启用 |
+| 缓存基础设施 | Redis 7 | Docker（已准备，当前业务未接入缓存） |
+| 图表 | Chart.js + react-chartjs-2 | 4.x / 5.x |
 | 认证 | JWT (passport-jwt) | 24h 有效期 |
 | 密码加密 | bcrypt | salt rounds = 10 |
 | CSV 解析 | csv-parse | |
@@ -26,7 +29,10 @@
 - **认证**：注册 / 登录 / JWT 鉴权
 - **用户管理**：表格展示、姓名搜索、role 多选过滤、添加/编辑/删除、批量删除、分页
 - **公司管理**：可折叠表格、公司名搜索、level 多选过滤、盈利效率着色、分页
-- **数据可视化 Dashboard**：4 张数据卡（大数字换算）、环形图（level 占比+交互）、折线图（累积增长趋势+交互）
+- **数据可视化 Dashboard**：4 张数据卡、level 环形图、成立年份累计折线图
+- **Company Data Explorer**：Data360 风格左右分栏、动态条形图、维度切换、组合过滤、多选 Chip、双端范围 Slider、Tooltip 数量及占比
+- **RESTful API**：认证、User/Company CRUD、分页筛选、Dashboard 聚合及条形图组合检索
+- **API 文档**：Swagger UI + OpenAPI JSON
 - **数据导入**：启动时自动从 CSV 导入 2000 条公司 + 关系数据
 - **可扩展导航栏**：Tab 数组定义，新增页面只需加一行
 
@@ -37,6 +43,7 @@
 ```
 project1/
 ├── .gitignore
+├── compose.yaml                     # PostgreSQL/pgvector + Redis
 ├── README.md
 │
 ├── backend/                          # NestJS 后端 (:3001)
@@ -72,7 +79,9 @@ project1/
 │       ├── dashboard/                # 数据可视化模块
 │       │   ├── dashboard.module.ts
 │       │   ├── dashboard.controller.ts # GET /api/dashboard
-│       │   └── dashboard.service.ts  # 聚合计算（数据卡+level分布+年份趋势）
+│       │   ├── dto/bar-chart-query.dto.ts
+│       │   └── dashboard.service.ts  # 数据卡、图表与组合过滤聚合
+│       ├── migrations/               # 建表、约束、pgvector 扩展
 │       └── common/guards/jwt-auth.guard.ts
 │
 └── frontend/                         # Next.js 前端 (:3000)
@@ -89,6 +98,7 @@ project1/
         │   ├── UserTable.tsx / UserToolbar.tsx / UserFormDialog.tsx
         │   ├── CompanyTable.tsx / CompanyToolbar.tsx
         │   ├── DashboardStatsCards.tsx / DashboardLevelChart.tsx / DashboardFoundedTrend.tsx
+        │   ├── DashboardCompanyBarChart.tsx # Data360 风格动态条形图
         │   └── providers/MuiThemeProvider.tsx
         ├── lib/
         │   ├── api-client.ts         # Axios 封装 (token 拦截器)
@@ -106,8 +116,8 @@ project1/
 
 ### 前置条件
 
-- Node.js >= 18
-- PostgreSQL 运行中（Docker 或本地安装）
+- Node.js >= 20（Next.js 16 推荐）
+- Docker Desktop（推荐，用于 PostgreSQL/pgvector 和 Redis）
 - npm
 
 ### 1. 配置数据库
@@ -134,6 +144,8 @@ DB_PASSWORD=devpass
 DB_DATABASE=week1_env
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=24h
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ### 2. CSV 数据（已包含）
@@ -148,7 +160,7 @@ npm install
 npm run start:dev
 ```
 
-后端启动在 **http://localhost:3001**，自动建表 + 导入 CSV 数据。
+后端启动在 **http://localhost:3001**。启动时 TypeORM 自动执行迁移完成建表、约束和 pgvector 扩展配置；空数据库会自动导入 CSV。
 
 ### 4. 启动前端
 
@@ -159,6 +171,15 @@ npm run dev
 ```
 
 前端启动在 **http://localhost:3000**。
+
+常用地址：
+
+| 服务 | 地址 |
+|---|---|
+| 登录 | http://localhost:3000/login |
+| Dashboard | http://localhost:3000/dashboard |
+| Swagger UI | http://localhost:3001/api/docs |
+| OpenAPI JSON | http://localhost:3001/api/docs-json |
 
 ### 5. 运行自动化测试
 
@@ -175,6 +196,15 @@ npm run test:e2e -- --runInBand
 cd frontend
 npm run test:dashboard
 ```
+
+生产构建：
+
+```bash
+cd backend && npm run build
+cd ../frontend && npm run build
+```
+
+> 当前生产构建与自动化测试均通过。项目仍有既存 ESLint/Prettier 告警，详见“已知说明”。
 
 ---
 
@@ -265,6 +295,19 @@ User 和 Company 列表统一返回 `{ items, total, page, pageSize }`，`page` 
 
 `dimension` 仅允许 `level`、`country`、`city`。数组为空表示不限制；范围端点可单独省略。响应包含匹配总数，以及各分组的 `label`、`count` 和 `percentage`。
 
+**动态条形图响应示例：**
+
+```json
+{
+  "dimension": "country",
+  "total": 214,
+  "data": [
+    { "label": "China", "count": 120, "percentage": 56.07476635514019 },
+    { "label": "United States", "count": 94, "percentage": 43.925233644859816 }
+  ]
+}
+```
+
 ---
 
 ## 数据库表结构
@@ -349,3 +392,13 @@ const NAV_TABS = [
 ```
 
 然后在 `src/app/(dashboard)/` 下创建对应的页面目录和 `page.tsx` 即可。
+
+---
+
+## 已知说明
+
+- Redis 容器和环境变量已经准备完成，但当前业务没有使用 Redis 缓存或会话。
+- LangGraph 和大模型属于后续 Agent 功能选型，当前业务任务尚未集成 Agent 模块。
+- Data Explorer 顶部保留 Data360 风格的 Map、Trend、Correlation、Bar、Data Table 标签；当前任务只实现并启用 `Bar`。
+- `npm run build`、Dashboard 单元测试和后端 E2E 均通过；全项目 lint 仍有旧代码格式和类型安全问题，暂未按本次要求修改。
+- `.env` 不提交到 Git；请从 `backend/.env.example` 复制并设置生产环境专用的 `JWT_SECRET`。
