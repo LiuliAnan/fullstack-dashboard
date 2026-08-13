@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,26 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Week 1 Dashboard API')
+    .setDescription('Authentication, user management, company management, and dashboard aggregation APIs.')
+    .setVersion('1.0')
+    .addTag('Auth', 'Registration, login, and current-user endpoints')
+    .addTag('Users', 'User management endpoints')
+    .addTag('Companies', 'Company and relationship management endpoints')
+    .addTag('Dashboard', 'Dashboard aggregation endpoints')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'api/docs-json',
+    customSiteTitle: 'Week 1 Dashboard API Docs',
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   await app.listen(3001);
 }

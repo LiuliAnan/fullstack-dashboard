@@ -4,4 +4,6 @@ dist/
 .env
 *.log
 .claude/
+.playwright-mcp/
+barchart-country.png
 *.tsbuildinfo

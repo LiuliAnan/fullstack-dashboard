@@ -8,5 +8,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   password: process.env.DB_PASSWORD || 'devpass',
   database: process.env.DB_DATABASE || 'week1_env',
   autoLoadEntities: true,
-  synchronize: true,
+  synchronize: false,
+  migrationsRun: true,
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
 };

@@ -12,6 +12,7 @@ import {
   Stack,
 } from '@mui/material';
 import apiClient from '@/lib/api-client';
+import axios from 'axios';
 import { USER_ROLES, USER_STATUSES } from '@/lib/constants';
 import type { UserListItem, CreateUserDto } from '@/types/api';
 
@@ -37,37 +38,60 @@ export default function UserFormDialog({ open, user, onClose, onSuccess }: Props
 
   // 对话框打开时，填充表单（编辑模式填入现有数据）
   useEffect(() => {
-    if (user) {
-      setForm({
-        name: user.name,
-        email: user.email,
-        password: '', // 编辑时密码留空，不填则不改
-        role: user.role,
-        status: user.status,
-      });
-    } else {
-      setForm({
-        name: '',
-        email: '',
-        password: '',
-        role: 'User',
-        status: 'active',
-      });
-    }
-    setError('');
+    const timer = window.setTimeout(() => {
+      if (user) {
+        setForm({
+          name: user.name,
+          email: user.email,
+          password: '', // 编辑时密码留空，不填则不改
+          role: user.role,
+          status: user.status,
+        });
+      } else {
+        setForm({
+          name: '',
+          email: '',
+          password: '',
+          role: 'User',
+          status: 'active',
+        });
+      }
+      setError('');
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [user, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    const normalizedName = form.name.trim();
+    const normalizedEmail = form.email.trim().toLowerCase();
+    if (!normalizedName) {
+      setError('Name is required');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if ((!isEdit || form.password) && form.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    if (form.password.length > 50 || /\s/.test(form.password)) {
+      setError('Password must be at most 50 characters and contain no whitespace');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (isEdit) {
         // 编辑：不传空密码（避免把密码改成空）
         const payload: Record<string, string> = {
-          name: form.name,
-          email: form.email,
+          name: normalizedName,
+          email: normalizedEmail,
           role: form.role,
           status: form.status,
         };
@@ -75,12 +99,17 @@ export default function UserFormDialog({ open, user, onClose, onSuccess }: Props
         await apiClient.patch(`/api/users/${user!.id}`, payload);
       } else {
         // 添加
-        await apiClient.post('/api/users', form);
+        await apiClient.post('/api/users', {
+          ...form,
+          name: normalizedName,
+          email: normalizedEmail,
+        });
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      const message = err.response?.data?.message;
+    } catch (err: unknown) {
+      const response = axios.isAxiosError(err) ? err.response : undefined;
+      const message = (response?.data as { message?: string | string[] } | undefined)?.message;
       setError(Array.isArray(message) ? message[0] : message || 'Operation failed');
     } finally {
       setLoading(false);

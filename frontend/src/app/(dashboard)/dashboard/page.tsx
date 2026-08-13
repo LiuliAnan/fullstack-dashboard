@@ -1,33 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Box, CircularProgress, Typography, Grid } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Alert, Box, Button, CircularProgress, Typography, Grid } from '@mui/material';
 import DashboardStatsCards from '@/components/DashboardStatsCards';
 import DashboardLevelChart from '@/components/DashboardLevelChart';
 import DashboardFoundedTrend from '@/components/DashboardFoundedTrend';
 import apiClient from '@/lib/api-client';
 import type { DashboardData } from '@/types/api';
+import DashboardCompanyBarChart from '@/components/DashboardCompanyBarChart';
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await apiClient.get('/api/dashboard');
-        setData(res.data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    await Promise.resolve();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiClient.get('/api/dashboard');
+      setData(res.data);
+    } catch {
+      setError('Unable to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading || !data) {
+  useEffect(() => {
+    const timer = window.setTimeout(() => void fetchData(), 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
+
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          Dashboard
+        </Typography>
+        <Alert
+          severity="error"
+          action={<Button color="inherit" onClick={() => void fetchData()}>Retry</Button>}
+        >
+          {error || 'Dashboard data is unavailable.'}
+        </Alert>
       </Box>
     );
   }
@@ -50,6 +75,8 @@ export default function DashboardPage() {
           <DashboardFoundedTrend data={data.foundedTrend} />
         </Grid>
       </Grid>
+
+      <DashboardCompanyBarChart />
     </Box>
   );
 }

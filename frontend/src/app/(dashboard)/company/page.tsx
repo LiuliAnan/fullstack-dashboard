@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Typography, Box, CircularProgress } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Alert, Button, Typography, Box, CircularProgress } from '@mui/material';
 import CompanyToolbar from '@/components/CompanyToolbar';
 import CompanyTable from '@/components/CompanyTable';
 import apiClient from '@/lib/api-client';
-import type { Company } from '@/types/api';
+import type { Company, PaginatedResponse } from '@/types/api';
 
 export default function CompanyPage() {
-  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState<number[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // 搜索防抖
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -22,30 +24,33 @@ export default function CompanyPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
+    await Promise.resolve();
     setLoading(true);
+    setError('');
     const params = new URLSearchParams();
     if (levelFilter.length) params.set('level', levelFilter.join(','));
     if (debouncedSearch) params.set('search', debouncedSearch);
+    params.set('page', String(page + 1));
+    params.set('pageSize', String(rowsPerPage));
     try {
-      const res = await apiClient.get(`/api/companies?${params.toString()}`);
-      setAllCompanies(res.data);
+      const res = await apiClient.get<PaginatedResponse<Company>>(
+        `/api/companies?${params.toString()}`,
+      );
+      setCompanies(res.data.items);
+      setTotal(res.data.total);
+    } catch {
+      setError('Unable to load companies. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, levelFilter, page, rowsPerPage]);
 
   // 过滤条件变化时重新查询，重置到第一页
   useEffect(() => {
-    setPage(0);
-    fetchCompanies();
-  }, [debouncedSearch, levelFilter]);
-
-  // 客户端分页
-  const pagedCompanies = allCompanies.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage,
-  );
+    const timer = window.setTimeout(() => void fetchCompanies(), 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchCompanies]);
 
   return (
     <Box>
@@ -55,18 +60,34 @@ export default function CompanyPage() {
 
       <CompanyToolbar
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(0);
+        }}
         levelFilter={levelFilter}
-        onLevelFilterChange={setLevelFilter}
+        onLevelFilterChange={(value) => {
+          setLevelFilter(value);
+          setPage(0);
+        }}
       />
+
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={<Button color="inherit" onClick={() => void fetchCompanies()}>Retry</Button>}
+        >
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
         </Box>
-      ) : (
+      ) : !error || companies.length > 0 ? (
         <CompanyTable
-          companies={pagedCompanies}
+          companies={companies}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={setPage}
@@ -74,9 +95,9 @@ export default function CompanyPage() {
             setRowsPerPage(r);
             setPage(0);
           }}
-          total={allCompanies.length}
+          total={total}
         />
-      )}
+      ) : null}
     </Box>
   );
 }

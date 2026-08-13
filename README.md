@@ -112,6 +112,15 @@ project1/
 
 ### 1. 配置数据库
 
+启动 PostgreSQL/pgvector 和 Redis：
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+容器使用持久化卷 `env_postgres_data` 和 `env_redis_data`，重启或重建容器不会删除数据。
+
 ```bash
 cp backend/.env.example backend/.env
 ```
@@ -151,9 +160,27 @@ npm run dev
 
 前端启动在 **http://localhost:3000**。
 
+### 5. 运行自动化测试
+
+后端 E2E（注册事务、JWT、分页筛选、Dashboard、批量删除）：
+
+```bash
+cd backend
+npm run test:e2e -- --runInBand
+```
+
+前端 Dashboard 纯计算测试：
+
+```bash
+cd frontend
+npm run test:dashboard
+```
+
 ---
 
 ## API 文档
+
+启动后端后访问 Swagger UI：`http://localhost:3001/api/docs`。OpenAPI JSON 位于 `http://localhost:3001/api/docs-json`。受保护接口可在 Swagger 的 **Authorize** 中填写登录返回的 JWT。
 
 ### 认证接口 `/api/auth`
 
@@ -167,7 +194,7 @@ npm run dev
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | /api/users?role=Admin,Manager&search=张 | 列表（role 多选过滤 + 姓名搜索） |
+| GET | /api/users?role=Admin,Manager&search=张&page=1&pageSize=10 | 分页列表（role 多选过滤 + 姓名搜索） |
 | GET | /api/users/:id | 单个用户 |
 | POST | /api/users | 创建用户（含 profile） |
 | PATCH | /api/users/:id | 更新用户 |
@@ -189,7 +216,7 @@ npm run dev
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | /api/companies?level=1,2&search=Doyle | 列表（level 多选过滤 + 公司名搜索，含盈利效率） |
+| GET | /api/companies?level=1,2&search=Doyle&page=1&pageSize=10 | 分页列表（level 多选过滤 + 公司名搜索，含盈利效率） |
 | GET | /api/companies/:code | 单个公司 |
 | POST | /api/companies | 创建公司 |
 | PATCH | /api/companies/:code | 更新公司 |
@@ -197,11 +224,15 @@ npm run dev
 
 > 盈利效率 = `annual_revenue / employees`，后端计算后返回 `profit_efficiency` 字段。
 
+User 和 Company 列表统一返回 `{ items, total, page, pageSize }`，`page` 从 1 开始，`pageSize` 最大为 100。
+
 ### Dashboard 接口 `/api/dashboard`
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | /api/dashboard | 一次返回所有可视化数据（后端计算聚合） |
+| GET | /api/dashboard/barchart/options | 返回条形图等级、国家、城市选项及数值边界 |
+| POST | /api/dashboard/barchart | 按维度分组并应用组合过滤器 |
 
 **响应结构：**
 ```json
@@ -215,6 +246,24 @@ npm run dev
 - **stats**：4 个汇总指标（COUNT / SUM / COUNT DISTINCT）
 - **levelDistribution**：各 level 占比（GROUP BY level + 百分比计算）
 - **foundedTrend**：按成立年份的累积公司数（GROUP BY year + 遍历累加）
+
+**动态条形图请求：**
+
+```json
+{
+  "dimension": "country",
+  "filter": {
+    "level": [1, 2, 3],
+    "country": ["China", "United States"],
+    "city": [],
+    "founded_year": { "start": 1950, "end": 2023 },
+    "annual_revenue": { "min": 0, "max": 1000000 },
+    "employees": { "min": 0, "max": 5000 }
+  }
+}
+```
+
+`dimension` 仅允许 `level`、`country`、`city`。数组为空表示不限制；范围端点可单独省略。响应包含匹配总数，以及各分组的 `label`、`count` 和 `percentage`。
 
 ---
 
@@ -266,7 +315,7 @@ npm run dev
 |---|---|---|---|
 | `/` | 重定向 /login | 否 | - |
 | `/login` `/signup` | 登录 / 注册 | 否 | 认证 |
-| `/dashboard` | 仪表盘 | 是 | 数据卡 + 环形图 + 折线图（Chart.js 可视化） |
+| `/dashboard` | 仪表盘 | 是 | 数据卡 + 环形图 + 折线图 + 多维组合过滤条形图 |
 | `/company` | 公司管理 | 是 | 可折叠表格 + 过滤搜索 + 盈利效率着色 |
 | `/user` | 用户管理 | 是 | 表格 CRUD + 批量删除 + 过滤搜索 |
 | `/order` | 订单管理 | 是 | 占位 |

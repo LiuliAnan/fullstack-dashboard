@@ -5,13 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { UserProfile } from './user-profile.entity';
 import { SignUpDto } from './dto/sign-up.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserQueryDto } from './dto/user-query.dto';
 
 @Injectable()
 export class UserService {
@@ -23,7 +24,7 @@ export class UserService {
     private dataSource: DataSource,
   ) {}
 
-  // ===== 认证相关（原有，保持不变）=====
+  // ===== 认证相关 =====
 
   async create(dto: SignUpDto): Promise<Partial<User>> {
     if (dto.password !== dto.confirmPassword) {
@@ -37,17 +38,31 @@ export class UserService {
       throw new ConflictException('Email already registered');
     }
 
-    const user = this.userRepository.create({
-      email: dto.email,
-      password_hash: dto.password,
-    });
-    const saved = await this.userRepository.save(user);
+    return this.dataSource.transaction(async (manager) => {
+      const user = manager.create(User, {
+        email: dto.email,
+        password_hash: dto.password,
+      });
+      const saved = await manager.save(user);
 
-    return {
-      id: saved.id,
-      email: saved.email,
-      createdAt: saved.createdAt,
-    };
+      const profile = manager.create(UserProfile, {
+        user_id: saved.id,
+        name: this.defaultNameFromEmail(saved.email),
+        role: 'User',
+        status: 'active',
+      });
+      await manager.save(profile);
+
+      return {
+        id: saved.id,
+        email: saved.email,
+        createdAt: saved.createdAt,
+      };
+    });
+  }
+
+  private defaultNameFromEmail(email: string): string {
+    return email.split('@')[0] || 'User';
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -57,7 +72,7 @@ export class UserService {
   // ===== 用户管理 CRUD =====
 
   // 列表查询：联表 user + user_profile，支持 role 过滤和 name 搜索
-  async findAll(query: { role?: string; search?: string }) {
+  async findAll(query: UserQueryDto) {
     const qb = this.userRepository
       .createQueryBuilder('u')
       .innerJoin('user_profile', 'p', 'p.user_id = u.id')
@@ -83,7 +98,19 @@ export class UserService {
       qb.andWhere('p.name ILIKE :search', { search: `%${query.search}%` });
     }
 
-    return qb.getRawMany();
+    const total = await qb.getCount();
+    const items = await qb
+      .orderBy('u.id', 'ASC')
+      .offset((query.page - 1) * query.pageSize)
+      .limit(query.pageSize)
+      .getRawMany();
+
+    return {
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   // 查询单个用户（联表）
@@ -195,8 +222,16 @@ export class UserService {
 
   // 批量删除
   async removeUsers(ids: number[]) {
-    await this.userProfileRepository.delete({ user_id: In(ids) });
-    await this.userRepository.delete(ids);
-    return { deleted: ids.length };
+    return this.dataSource.transaction(async (manager) => {
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(UserProfile)
+        .where('user_id IN (:...ids)', { ids })
+        .execute();
+
+      const result = await manager.delete(User, ids);
+      return { deleted: result.affected ?? 0 };
+    });
   }
 }

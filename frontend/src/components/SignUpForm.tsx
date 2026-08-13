@@ -14,6 +14,7 @@ import {
   CardContent,
 } from '@mui/material';
 import apiClient from '@/lib/api-client';
+import axios from 'axios';
 import type { ApiResponse, User } from '@/types/api';
 
 type FormErrors = {
@@ -37,7 +38,7 @@ export default function SignUpForm() {
 
     if (!email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
 
@@ -45,6 +46,10 @@ export default function SignUpForm() {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    } else if (password.length > 50) {
+      newErrors.password = 'Password must be at most 50 characters';
+    } else if (/\s/.test(password)) {
+      newErrors.password = 'Password must not contain whitespace';
     }
 
     if (!confirmPassword) {
@@ -66,15 +71,17 @@ export default function SignUpForm() {
     setLoading(true);
     try {
       await apiClient.post<ApiResponse<User>>('/api/auth/signup', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         confirmPassword,
       });
       setSuccess(true);
       setTimeout(() => router.push('/login'), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const response = axios.isAxiosError(err) ? err.response : undefined;
       const message =
-        err.response?.data?.message || 'Registration failed. Please try again.';
+        (response?.data as { message?: string | string[] } | undefined)?.message ||
+        'Registration failed. Please try again.';
       setApiError(Array.isArray(message) ? message[0] : message);
     } finally {
       setLoading(false);

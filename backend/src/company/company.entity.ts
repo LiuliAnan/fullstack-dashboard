@@ -1,6 +1,10 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Check } from 'typeorm';
 
 @Entity('company')
+@Check('CHK_company_level', '"level" BETWEEN 1 AND 4')
+@Check('CHK_company_founded_year', '"founded_year" BETWEEN 1800 AND 2100')
+@Check('CHK_company_annual_revenue', '"annual_revenue" >= 0')
+@Check('CHK_company_employees', '"employees" >= 0')
 export class Company {
   @PrimaryColumn()
   company_code: string;

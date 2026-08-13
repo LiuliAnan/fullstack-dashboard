@@ -1,35 +1,17 @@
-import type { DashboardData } from '@/types/api';
+import type { Company } from '@/types/api';
+import { calculateDashboardData } from './dashboard-calculations';
 
-// Mock 数据：摘取真实数据的聚合特征，用于先开发组件
-// 后端 API 做好后替换为真实请求
-export const dashboardMock: DashboardData = {
-  stats: {
-    companyCount: 2000,
-    totalRevenue: 182779175,
-    countryCount: 8,
-    employeeCount: 699119,
-  },
-  levelDistribution: [
-    { level: 1, count: 1, percentage: 0.05 },
-    { level: 2, count: 50, percentage: 2.5 },
-    { level: 3, count: 250, percentage: 12.5 },
-    { level: 4, count: 1699, percentage: 84.95 },
-  ],
-  // 摘取部分年份的累积趋势（真实数据 1900-2023，这里取关键节点）
-  foundedTrend: [
-    { year: 1900, cumulative: 1 },
-    { year: 1910, cumulative: 8 },
-    { year: 1920, cumulative: 22 },
-    { year: 1930, cumulative: 45 },
-    { year: 1940, cumulative: 78 },
-    { year: 1950, cumulative: 120 },
-    { year: 1960, cumulative: 180 },
-    { year: 1970, cumulative: 260 },
-    { year: 1980, cumulative: 380 },
-    { year: 1990, cumulative: 540 },
-    { year: 2000, cumulative: 850 },
-    { year: 2010, cumulative: 1300 },
-    { year: 2020, cumulative: 1850 },
-    { year: 2023, cumulative: 2000 },
-  ],
-};
+// 从 backend/data/companies_0708.csv 摘取的真实公司子集。
+// 组件开发、离线预览和计算测试均可使用这份原始结构。
+export const dummyCompanies: Company[] = [
+  { company_code: 'C0', company_name: 'Rodriguez, Figueroa and Sanchez', level: 1, country: 'China', city: 'Beijing', founded_year: 1994, annual_revenue: 317736, employees: 4606, parent_company: null },
+  { company_code: 'C01', company_name: 'Doyle Ltd', level: 2, country: 'Japan', city: 'Nagoya', founded_year: 1917, annual_revenue: 429408, employees: 889, parent_company: 'C0' },
+  { company_code: 'C02', company_name: 'Mcclain, Miller and Henderson', level: 2, country: 'China', city: 'Hangzhou', founded_year: 1954, annual_revenue: 894345, employees: 310, parent_company: 'C0' },
+  { company_code: 'C001', company_name: 'Walker LLC', level: 3, country: 'Japan', city: 'Tokyo', founded_year: 1994, annual_revenue: 94834, employees: 744, parent_company: 'C01' },
+  { company_code: 'C002', company_name: 'Chapman and Sons', level: 3, country: 'USA', city: 'Houston', founded_year: 1994, annual_revenue: 92538, employees: 947, parent_company: 'C01' },
+  { company_code: 'C0302', company_name: 'Estrada-Nolan', level: 4, country: 'Germany', city: 'Düsseldorf', founded_year: 2014, annual_revenue: 30690, employees: 194, parent_company: 'C03' },
+  { company_code: 'C0303', company_name: 'Santana-Byrd', level: 4, country: 'France', city: 'Lille', founded_year: 2023, annual_revenue: 95680, employees: 377, parent_company: 'C03' },
+];
+
+// 由原始 dummy companies 动态计算，不再手写聚合结果。
+export const dashboardMock = calculateDashboardData(dummyCompanies);

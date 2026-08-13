@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: week1-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-week1_env}
+      POSTGRES_USER: ${POSTGRES_USER:-devuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-week1_env}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: week1-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
+    name: env_postgres_data
+    external: true
+  redis_data:
+    name: env_redis_data
+    external: true

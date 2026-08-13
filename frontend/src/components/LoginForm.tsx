@@ -14,6 +14,7 @@ import {
   CardContent,
 } from '@mui/material';
 import apiClient from '@/lib/api-client';
+import axios from 'axios';
 import { setToken } from '@/lib/auth';
 import type { ApiResponse, LoginResult } from '@/types/api';
 
@@ -35,7 +36,7 @@ export default function LoginForm() {
 
     if (!email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
 
@@ -59,14 +60,15 @@ export default function LoginForm() {
     try {
       const res = await apiClient.post<ApiResponse<LoginResult>>(
         '/api/auth/login',
-        { email, password },
+        { email: email.trim().toLowerCase(), password },
       );
       const { accessToken } = res.data.data!;
       setToken(accessToken);
       router.push('/dashboard');
-    } catch (err: any) {
-      const status = err.response?.status;
-      const message = err.response?.data?.message;
+    } catch (err: unknown) {
+      const response = axios.isAxiosError(err) ? err.response : undefined;
+      const status = response?.status;
+      const message = (response?.data as { message?: string | string[] } | undefined)?.message;
 
       if (status === 401) {
         setApiError('Invalid email or password');

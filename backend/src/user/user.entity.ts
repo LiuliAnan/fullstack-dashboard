@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   BeforeInsert,
+  OneToOne,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
+import { UserProfile } from './user-profile.entity';
 
 @Entity('user')
 export class User {
@@ -26,6 +28,9 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @OneToOne(() => UserProfile, (profile) => profile.user)
+  profile: UserProfile;
 
   @BeforeInsert()
   async hashPassword() {

@@ -72,6 +72,31 @@ export interface DashboardData {
   foundedTrend: FoundedTrendItem[];
 }
 
+export type BarChartDimension = 'level' | 'country' | 'city';
+export interface BarChartFilters {
+  level: number[];
+  country: string[];
+  city: string[];
+  founded_year: { start?: number; end?: number };
+  annual_revenue: { min?: number; max?: number };
+  employees: { min?: number; max?: number };
+}
+export interface BarChartOptions {
+  levels: number[];
+  countries: string[];
+  cities: string[];
+  ranges: {
+    foundedYear: { min: number; max: number };
+    annualRevenue: { min: number; max: number };
+    employees: { min: number; max: number };
+  };
+}
+export interface BarChartResult {
+  dimension: BarChartDimension;
+  total: number;
+  data: Array<{ label: string; count: number; percentage: number }>;
+}
+
 export interface SignUpDto {
   email: string;
   password: string;
@@ -88,6 +113,13 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   data?: T;
   error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface LoginResult {

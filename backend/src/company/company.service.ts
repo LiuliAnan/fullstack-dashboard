@@ -9,6 +9,7 @@ import { Company } from './company.entity';
 import { Relationship } from './relationship.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { CompanyQueryDto } from './dto/company-query.dto';
 
 @Injectable()
 export class CompanyService {
@@ -52,7 +53,7 @@ export class CompanyService {
   }
 
   // 列表查询：支持 level 过滤和 name 搜索，计算盈利效率
-  async findAll(query: { level?: string; search?: string }) {
+  async findAll(query: CompanyQueryDto) {
     const qb = this.companyBaseQuery();
 
     // level 多选过滤（逗号分隔，如 ?level=1,2）
@@ -73,8 +74,19 @@ export class CompanyService {
       });
     }
 
-    const companies = await qb.getRawMany();
-    return companies.map((c) => this.withProfitEfficiency(c));
+    const total = await qb.getCount();
+    const companies = await qb
+      .orderBy('c.company_code', 'ASC')
+      .offset((query.page - 1) * query.pageSize)
+      .limit(query.pageSize)
+      .getRawMany();
+
+    return {
+      items: companies.map((company) => this.withProfitEfficiency(company)),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   // 查询单个公司（联表，含盈利效率）
