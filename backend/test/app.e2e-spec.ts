@@ -213,6 +213,60 @@ describe('Application E2E', () => {
       .expect(400);
   });
 
+  it('returns a filtered company hierarchy without duplicate nodes', async () => {
+    const expected = await dataSource.query(
+      `SELECT COUNT(*)::int AS count FROM company
+       WHERE level IN (1, 2) AND country = 'China'
+         AND founded_year BETWEEN 1900 AND 2023`,
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/dashboard/bubblechart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        filter: {
+          level: [1, 2],
+          country: ['China'],
+          city: [],
+          founded_year: { start: 1900, end: 2023 },
+          annual_revenue: {},
+          employees: {},
+        },
+      })
+      .expect(201);
+
+    type Node = { code: string; level: number; country?: string; matched?: boolean; children?: Node[] };
+    const flatten = (nodes: Node[]): Node[] => nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
+    const nodes = flatten(response.body.hierarchy.children);
+    const matchedNodes = nodes.filter((node) => node.matched);
+    expect(response.body.total).toBe(expected[0].count);
+    expect(new Set(nodes.map((node) => node.code)).size).toBe(nodes.length);
+    expect(matchedNodes).toHaveLength(expected[0].count);
+    expect(matchedNodes.every((node) => [1, 2].includes(node.level) && node.country === 'China')).toBe(true);
+    expect(nodes.length).toBeGreaterThanOrEqual(matchedNodes.length);
+
+    const expectedLeafCompanies = await dataSource.query(
+      'SELECT COUNT(*)::int AS count FROM company WHERE level = 4',
+    );
+    const leafResponse = await request(app.getHttpServer())
+      .post('/api/dashboard/bubblechart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ filter: { level: [4] } })
+      .expect(201);
+    const leafTreeNodes = flatten(leafResponse.body.hierarchy.children);
+    const matchedLeafNodes = leafTreeNodes.filter((node) => node.matched);
+    expect(leafResponse.body.total).toBe(expectedLeafCompanies[0].count);
+    expect(matchedLeafNodes).toHaveLength(expectedLeafCompanies[0].count);
+    expect(leafTreeNodes.length).toBeGreaterThan(matchedLeafNodes.length);
+  });
+
+  it('rejects invalid bubble-chart ranges', async () => {
+    await request(app.getHttpServer())
+      .post('/api/dashboard/bubblechart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ filter: { annual_revenue: { min: 500, max: 100 } } })
+      .expect(400);
+  });
+
   it('validates batch deletion and deletes the test user', async () => {
     await request(app.getHttpServer())
       .delete('/api/users')

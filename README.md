@@ -16,7 +16,7 @@
 | 数据库 | PostgreSQL 16 | Docker |
 | 向量扩展 | pgvector | Docker 镜像内置，迁移自动启用 |
 | 缓存基础设施 | Redis 7 | Docker（已准备，当前业务未接入缓存） |
-| 图表 | Chart.js + react-chartjs-2 | 4.x / 5.x |
+| 图表 | Chart.js + react-chartjs-2、D3 | 4.x / 5.x / 7.x |
 | 认证 | JWT (passport-jwt) | 24h 有效期 |
 | 密码加密 | bcrypt | salt rounds = 10 |
 | CSV 解析 | csv-parse | |
@@ -30,7 +30,7 @@
 - **用户管理**：表格展示、姓名搜索、role 多选过滤、添加/编辑/删除、批量删除、分页
 - **公司管理**：可折叠表格、公司名搜索、level 多选过滤、盈利效率着色、分页
 - **数据可视化 Dashboard**：4 张数据卡、level 环形图、成立年份累计折线图
-- **Company Data Explorer**：Data360 风格左右分栏、动态条形图、维度切换、组合过滤、多选 Chip、双端范围 Slider、Tooltip 数量及占比
+- **Company Data Explorer**：Bar/Bubble Tab、动态条形图、D3 可缩放层级气泡图、组合过滤、多选 Chip、双端范围 Slider 和 Tooltip
 - **RESTful API**：认证、User/Company CRUD、分页筛选、Dashboard 聚合及条形图组合检索
 - **API 文档**：Swagger UI + OpenAPI JSON
 - **数据导入**：启动时自动从 CSV 导入 2000 条公司 + 关系数据
@@ -263,6 +263,7 @@ User 和 Company 列表统一返回 `{ items, total, page, pageSize }`，`page` 
 | GET | /api/dashboard | 一次返回所有可视化数据（后端计算聚合） |
 | GET | /api/dashboard/barchart/options | 返回条形图等级、国家、城市选项及数值边界 |
 | POST | /api/dashboard/barchart | 按维度分组并应用组合过滤器 |
+| POST | /api/dashboard/bubblechart | 应用相同组合过滤器并返回公司层级嵌套结构 |
 
 **响应结构：**
 ```json
@@ -294,6 +295,8 @@ User 和 Company 列表统一返回 `{ items, total, page, pageSize }`，`page` 
 ```
 
 `dimension` 仅允许 `level`、`country`、`city`。数组为空表示不限制；范围端点可单独省略。响应包含匹配总数，以及各分组的 `label`、`count` 和 `percentage`。
+
+Bubble API 请求体只需要同一套 `filter`。响应的 `hierarchy` 使用虚拟根节点 `ROOT` 包含所有过滤后的子树；当父公司未通过过滤时，符合条件的子公司会成为当前结果中的根节点，确保返回数量与过滤结果严格一致且不重复。
 
 **动态条形图响应示例：**
 

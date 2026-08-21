@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import apiClient from '@/lib/api-client';
 import type { BarChartDimension, BarChartFilters, BarChartOptions, BarChartResult } from '@/types/api';
+import DashboardCompanyBubbleChart from './DashboardCompanyBubbleChart';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
@@ -106,6 +107,7 @@ function activeFilterCount(filters: BarChartFilters) {
 }
 
 export default function DashboardCompanyBarChart() {
+  const [view, setView] = useState<'bar' | 'bubble'>('bar');
   const [dimension, setDimension] = useState<BarChartDimension>('level');
   const [filters, setFilters] = useState<BarChartFilters>(EMPTY_FILTERS);
   const [options, setOptions] = useState<BarChartOptions | null>(null);
@@ -137,9 +139,10 @@ export default function DashboardCompanyBarChart() {
   }, []);
 
   useEffect(() => {
+    if (view !== 'bar') return;
     const timer = window.setTimeout(() => void loadChart(), 250);
     return () => window.clearTimeout(timer);
-  }, [loadChart]);
+  }, [loadChart, view]);
 
   const filterCount = activeFilterCount(filters);
   const summary = useMemo(() => {
@@ -147,11 +150,13 @@ export default function DashboardCompanyBarChart() {
     if (filters.level.length) values.push(`Level ${filters.level.join(', ')}`);
     if (filters.country.length) values.push(filters.country.join(', '));
     if (filters.city.length) values.push(filters.city.join(', '));
-    if (filters.founded_year.start || filters.founded_year.end) values.push(`Founded ${filters.founded_year.start ?? 'Any'}–${filters.founded_year.end ?? 'Any'}`);
+    if (filters.founded_year.start !== undefined || filters.founded_year.end !== undefined) {
+      values.push(`Founded ${filters.founded_year.start ?? options?.ranges.foundedYear.min ?? 'Any'}–${filters.founded_year.end ?? options?.ranges.foundedYear.max ?? 'Any'}`);
+    }
     if (filters.annual_revenue.min !== undefined || filters.annual_revenue.max !== undefined) values.push('Revenue range applied');
     if (filters.employees.min !== undefined || filters.employees.max !== undefined) values.push('Employee range applied');
     return values;
-  }, [filters]);
+  }, [filters, options]);
 
   const chartData = {
     labels: result?.data.map((item) => dimension === 'level' ? `Level ${item.label}` : item.label) ?? [],
@@ -177,40 +182,43 @@ export default function DashboardCompanyBarChart() {
         <Card sx={{ p: { xs: 2, md: 2.5 }, minWidth: 0, borderRadius: 1, boxShadow: '0 1px 6px rgba(15, 40, 70, .18)' }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#111' }}>Companies by {DIMENSIONS.find((item) => item.value === dimension)?.label.toLowerCase()}</Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: '#344054' }}>{result ? `${result.total.toLocaleString()} companies` : 'Loading companies…'}{summary.length ? ` · ${summary.join(' · ')}` : ' · All available company records'}</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#111' }}>{view === 'bar' ? `Companies by ${DIMENSIONS.find((item) => item.value === dimension)?.label.toLowerCase()}` : 'Company hierarchy'}</Typography>
+              <Typography variant="body2" sx={{ mt: 1, color: '#344054' }}>{view === 'bar' && result ? `${result.total.toLocaleString()} companies · ` : ''}{summary.length ? summary.join(' · ') : 'All available company records'}</Typography>
             </Box>
             <IconButton size="small" aria-label="Chart menu"><MenuIcon /></IconButton>
           </Stack>
-          {error && <Alert sx={{ mt: 2 }} severity="error" action={<Button color="inherit" onClick={() => void loadChart()}>Retry</Button>}>{error}</Alert>}
-          {loading ? <Box sx={{ height: 480, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>
-            : result?.data.length ? <Box sx={{ height: 500, mt: 3, overflowX: 'auto' }}><Box sx={{ height: '100%', minWidth: Math.max(620, result.data.length * 58) }}><Bar data={chartData} options={chartOptions} /></Box></Box>
-              : <Alert sx={{ mt: 3 }} severity="info">No companies match the selected filters.</Alert>}
+          {view === 'bar' ? <>
+            {error && <Alert sx={{ mt: 2 }} severity="error" action={<Button color="inherit" onClick={() => void loadChart()}>Retry</Button>}>{error}</Alert>}
+            {loading ? <Box sx={{ height: 480, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>
+              : result?.data.length ? <Box sx={{ height: 500, mt: 3, overflowX: 'auto' }}><Box sx={{ height: '100%', minWidth: Math.max(620, result.data.length * 58) }}><Bar data={chartData} options={chartOptions} /></Box></Box>
+                : <Alert sx={{ mt: 3 }} severity="info">No companies match the selected filters.</Alert>}
+          </> : <DashboardCompanyBubbleChart filters={filters} />}
           {summary.length > 0 && <Stack direction="row" spacing={0.75} useFlexGap sx={{ mt: 2, flexWrap: 'wrap' }}>{summary.map((item) => <Chip key={item} label={item} size="small" />)}</Stack>}
-          <Typography variant="body2" sx={{ mt: 3, lineHeight: 1.55 }}><strong>Note:</strong> Bars show the number of companies in each selected dimension. All level, location, founded-year, annual-revenue and employee filters are combined. Hover over a bar to view its count and share of the filtered total.</Typography>
+          <Typography variant="body2" sx={{ mt: 3, lineHeight: 1.55 }}><strong>Note:</strong> {view === 'bar' ? 'Bars show the number of companies in each selected dimension. Hover over a bar to view its count and share.' : 'Circle size represents the number of companies in a branch. Click a parent bubble to zoom in; click the background or a non-zoomable leaf area to return to the overview.'} All filters are combined.</Typography>
           <Typography variant="caption" color="text.secondary">Source: Company supply-chain database</Typography>
         </Card>
 
         <Box sx={{ minWidth: 0 }}>
-          <Tabs value="bar" variant="scrollable" scrollButtons={false} sx={{ minHeight: 45, borderBottom: '1px solid #c5cbd3', '& .MuiTab-root': { minWidth: 0, px: 1.5, minHeight: 45, color: '#111', textTransform: 'none' } }}>
-            <Tab value="map" label="Map" disabled /><Tab value="trend" label="Trend" disabled /><Tab value="correlation" label="Correlation" disabled /><Tab value="bar" label="Bar" /><Tab value="table" label="Data Table" disabled />
+          <Tabs value={view} onChange={(_, value: 'bar' | 'bubble') => setView(value)} sx={{ minHeight: 45, borderBottom: '1px solid #c5cbd3', '& .MuiTab-root': { minHeight: 45, color: '#111', textTransform: 'none' } }}>
+            <Tab value="bar" label="Bar chart" /><Tab value="bubble" label="Bubble hierarchy" />
           </Tabs>
           <Button sx={{ mt: 2, mb: 2, bgcolor: '#fff', borderRadius: 0 }} startIcon={<RestartAltIcon />} disabled={!filterCount} onClick={() => setFilters(EMPTY_FILTERS)}>Reset Filters {filterCount ? `(${filterCount})` : ''}</Button>
-          <FilterPanel dimension={dimension} setDimension={setDimension} filters={filters} setFilters={setFilters} options={options} />
+          <FilterPanel showDimension={view === 'bar'} dimension={dimension} setDimension={setDimension} filters={filters} setFilters={setFilters} options={options} />
         </Box>
       </Box>
     </Box>
   );
 }
 
-function FilterPanel({ dimension, setDimension, filters, setFilters, options }: {
+function FilterPanel({ showDimension, dimension, setDimension, filters, setFilters, options }: {
+  showDimension: boolean;
   dimension: BarChartDimension; setDimension: (value: BarChartDimension) => void;
   filters: BarChartFilters; setFilters: (value: BarChartFilters) => void; options: BarChartOptions | null;
 }) {
   return (
     <Stack spacing={2}>
-      <Box><Typography variant="subtitle2" sx={{ mb: 0.75, color: '#111' }}>X-axis dimension</Typography><FormControl size="small" fullWidth sx={{ bgcolor: '#fff' }}><InputLabel>Select dimension</InputLabel><Select value={dimension} label="Select dimension" onChange={(event) => setDimension(event.target.value as BarChartDimension)}>{DIMENSIONS.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl></Box>
-      <Divider />
+      {showDimension && <Box><Typography variant="subtitle2" sx={{ mb: 0.75, color: '#111' }}>X-axis dimension</Typography><FormControl size="small" fullWidth sx={{ bgcolor: '#fff' }}><InputLabel>Select dimension</InputLabel><Select value={dimension} label="Select dimension" onChange={(event) => setDimension(event.target.value as BarChartDimension)}>{DIMENSIONS.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</Select></FormControl></Box>}
+      {showDimension && <Divider />}
       {options ? <>
         <MultiFilter label="Company level" value={filters.level} options={options.levels} onChange={(value) => setFilters({ ...filters, level: value.map(Number) })} />
         <MultiFilter label="Country" value={filters.country} options={options.countries} onChange={(value) => setFilters({ ...filters, country: value.map(String) })} />

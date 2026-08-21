@@ -97,6 +97,25 @@ export interface BarChartResult {
   data: Array<{ label: string; count: number; percentage: number }>;
 }
 
+export interface CompanyHierarchyNode {
+  name: string;
+  code: string;
+  level: number;
+  country?: string;
+  city?: string;
+  foundedYear?: number;
+  annualRevenue?: number;
+  employees?: number;
+  value: number;
+  matched?: boolean;
+  children?: CompanyHierarchyNode[];
+}
+
+export interface BubbleChartResult {
+  total: number;
+  hierarchy: CompanyHierarchyNode;
+}
+
 export interface SignUpDto {
   email: string;
   password: string;

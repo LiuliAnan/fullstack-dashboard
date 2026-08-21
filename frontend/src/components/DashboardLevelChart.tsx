@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import type { ChartOptions } from 'chart.js';
 import { Card, CardContent, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import type { LevelDistributionItem } from '@/types/api';
 
@@ -41,12 +42,12 @@ export default function DashboardLevelChart({ data }: Props) {
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'doughnut'> = {
     plugins: {
       legend: { display: false },  // 用下方数据表格代替图例
       tooltip: {
         callbacks: {
-          label: (ctx: any) => {
+          label: (ctx) => {
             const item = data[ctx.dataIndex];
             return ` ${item.count} companies (${item.percentage.toFixed(2)}%)`;
           },

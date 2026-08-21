@@ -7,7 +7,6 @@ import {
   Tabs,
   Tab,
   Button,
-  Box,
 } from '@mui/material';
 import { clearToken } from '@/lib/auth';
 

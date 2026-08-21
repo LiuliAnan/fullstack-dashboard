@@ -11,6 +11,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import type { ChartOptions } from 'chart.js';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import type { FoundedTrendItem } from '@/types/api';
 
@@ -46,13 +47,13 @@ export default function DashboardFoundedTrend({ data }: Props) {
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'line'> = {
     plugins: {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          title: (items: any) => `Year ${items[0].label}`,
-          label: (ctx: any) => ` ${ctx.parsed.y} companies`,
+          title: (items) => `Year ${items[0].label}`,
+          label: (ctx) => ` ${ctx.parsed.y} companies`,
         },
       },
     },
@@ -67,7 +68,7 @@ export default function DashboardFoundedTrend({ data }: Props) {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (val: any) => (val >= 1000 ? `${(val / 1000).toFixed(0)}K` : val),
+          callback: (value) => typeof value === 'number' && value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value,
         },
       },
     },

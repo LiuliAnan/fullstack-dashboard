@@ -3,6 +3,7 @@ import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { BarChartQueryDto } from './dto/bar-chart-query.dto';
+import { BubbleChartQueryDto } from './dto/bubble-chart-query.dto';
 
 @ApiTags('Dashboard')
 @ApiBearerAuth('access-token')
@@ -29,5 +30,11 @@ export class DashboardController {
   @ApiOperation({ summary: 'Group companies by a dimension using combined filters' })
   getCompaniesByFilter(@Body() dto: BarChartQueryDto) {
     return this.dashboardService.getCompaniesByFilter(dto);
+  }
+
+  @Post('bubblechart')
+  @ApiOperation({ summary: 'Get a filtered company hierarchy for the zoomable bubble chart' })
+  getCompanyHierarchy(@Body() dto: BubbleChartQueryDto) {
+    return this.dashboardService.getCompanyHierarchy(dto);
   }
 }
