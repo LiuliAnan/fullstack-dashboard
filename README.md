@@ -78,9 +78,10 @@ project1/
 │       │   └── dto/                  # create-company / update-company
 │       ├── dashboard/                # 数据可视化模块
 │       │   ├── dashboard.module.ts
-│       │   ├── dashboard.controller.ts # GET /api/dashboard
+│       │   ├── dashboard.controller.ts # Dashboard、Bar、Bubble API
 │       │   ├── dto/bar-chart-query.dto.ts
-│       │   └── dashboard.service.ts  # 数据卡、图表与组合过滤聚合
+│       │   ├── dto/bubble-chart-query.dto.ts
+│       │   └── dashboard.service.ts  # 聚合、组合过滤与层级树构建
 │       ├── migrations/               # 建表、约束、pgvector 扩展
 │       └── common/guards/jwt-auth.guard.ts
 │
@@ -98,7 +99,8 @@ project1/
         │   ├── UserTable.tsx / UserToolbar.tsx / UserFormDialog.tsx
         │   ├── CompanyTable.tsx / CompanyToolbar.tsx
         │   ├── DashboardStatsCards.tsx / DashboardLevelChart.tsx / DashboardFoundedTrend.tsx
-        │   ├── DashboardCompanyBarChart.tsx # Data360 风格动态条形图
+        │   ├── DashboardCompanyBarChart.tsx # Bar/Bubble Tab 与共享过滤面板
+        │   ├── DashboardCompanyBubbleChart.tsx # D3 可缩放层级气泡图
         │   └── providers/MuiThemeProvider.tsx
         ├── lib/
         │   ├── api-client.ts         # Axios 封装 (token 拦截器)
@@ -296,7 +298,38 @@ User 和 Company 列表统一返回 `{ items, total, page, pageSize }`，`page` 
 
 `dimension` 仅允许 `level`、`country`、`city`。数组为空表示不限制；范围端点可单独省略。响应包含匹配总数，以及各分组的 `label`、`count` 和 `percentage`。
 
-Bubble API 请求体只需要同一套 `filter`。响应的 `hierarchy` 使用虚拟根节点 `ROOT` 包含所有过滤后的子树；当父公司未通过过滤时，符合条件的子公司会成为当前结果中的根节点，确保返回数量与过滤结果严格一致且不重复。
+Bubble API 请求体只需要与 Bar API 相同的 `filter`。响应的 `hierarchy` 使用虚拟根节点 `ROOT` 和递归 `children` 表达公司层级。后端先确定真正符合条件的公司，再保留这些公司的完整祖先路径；祖先节点以 `matched: false` 标记，仅用于维持关系，`total` 只统计真正命中的公司，因此层级不会因过滤而断裂，节点编码也不会重复。
+
+**层级气泡图响应示例：**
+
+```json
+{
+  "total": 1,
+  "hierarchy": {
+    "name": "Company network",
+    "code": "ROOT",
+    "level": 0,
+    "value": 0,
+    "children": [
+      {
+        "name": "Example Company",
+        "code": "C001",
+        "level": 1,
+        "country": "China",
+        "city": "Beijing",
+        "foundedYear": 2000,
+        "annualRevenue": 500000,
+        "employees": 120,
+        "value": 1,
+        "matched": true,
+        "children": []
+      }
+    ]
+  }
+}
+```
+
+前端使用 D3 `hierarchy`、`pack` 和 `interpolateZoom` 绘制图表：点击父级气泡进入层级，点击背景或不可缩放的叶子区域返回总览；父级气泡 Hover 时显示加粗边框和公司详情 Tooltip。SVG 使用 `viewBox`、等比例布局与 `ResizeObserver`，浏览器页面缩放或容器宽度变化时会重新计算布局。
 
 **动态条形图响应示例：**
 
@@ -402,6 +435,7 @@ const NAV_TABS = [
 
 - Redis 容器和环境变量已经准备完成，但当前业务没有使用 Redis 缓存或会话。
 - LangGraph 和大模型属于后续 Agent 功能选型，当前业务任务尚未集成 Agent 模块。
-- Data Explorer 顶部保留 Data360 风格的 Map、Trend、Correlation、Bar、Data Table 标签；当前任务只实现并启用 `Bar`。
-- `npm run build`、Dashboard 单元测试和后端 E2E 均通过；全项目 lint 仍有旧代码格式和类型安全问题，暂未按本次要求修改。
+- Company Data Explorer 当前提供 `Bar chart` / `Bubble hierarchy` Tab；两个视图共享 level、country、city、成立年份、年收入和员工数量过滤状态。
+- D3 层级气泡图参考 Observable Zoomable Circle Packing 的 pack 布局、焦点切换和插值缩放逻辑，并适配当前 MUI Dashboard 风格。
+- 前端全项目 lint 为 0 错误、Dashboard 计算测试 4/4 通过、Next.js 生产构建通过；后端构建和 E2E 12/12 通过。
 - `.env` 不提交到 Git；请从 `backend/.env.example` 复制并设置生产环境专用的 `JWT_SECRET`。
