@@ -21,7 +21,7 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Week 1 Dashboard API')
+    .setTitle('Dashboard API')
     .setDescription('Authentication, user management, company management, and dashboard aggregation APIs.')
     .setVersion('1.0')
     .addTag('Auth', 'Registration, login, and current-user endpoints')
@@ -36,7 +36,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument, {
     jsonDocumentUrl: 'api/docs-json',
-    customSiteTitle: 'Week 1 Dashboard API Docs',
+    customSiteTitle: 'Dashboard API Docs',
     swaggerOptions: { persistAuthorization: true },
   });
 

@@ -1,0 +1,4236 @@
+{
+  "info": {
+    "_postman_id": "a3d71439-7d33-4b95-a81c-2403ae649e02",
+    "name": "Dashboard API - Complete Test Suite",
+    "description": "18 API endpoints with approximately five scenarios per endpoint. Tests cover connectivity/status codes, empty and malformed input, response JSON/contracts, authorization, and performance.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get(\"runId\")) {",
+          "  const id = Date.now().toString();",
+          "  pm.collectionVariables.set(\"runId\", id);",
+          "  pm.collectionVariables.set(\"authEmail\", `postman.auth.${id}@example.com`);",
+          "  pm.collectionVariables.set(\"mismatchEmail\", `postman.mismatch.${id}@example.com`);",
+          "  pm.collectionVariables.set(\"unknownEmail\", `postman.unknown.${id}@example.com`);",
+          "  pm.collectionVariables.set(\"managedEmail\", `postman.managed.${id}@example.com`);",
+          "  pm.collectionVariables.set(\"invalidRoleEmail\", `postman.role.${id}@example.com`);",
+          "  pm.collectionVariables.set(\"companyCode\", `PM${id}`);",
+          "  pm.collectionVariables.set(\"badCompanyCode\", `BAD${id}`);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "authUserId",
+      "value": ""
+    },
+    {
+      "key": "managedUserId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - POST /api/auth/signup",
+      "item": [
+        {
+          "name": "01 valid signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"confirmPassword\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"signup response schema\", () => { const b=pm.response.json(); pm.expect(b.statusCode).to.eql(201); pm.expect(b.data.email).to.eql(pm.collectionVariables.get(\"authEmail\")); });",
+                  "const b=pm.response.json(); if (b.data?.id) pm.collectionVariables.set(\"authUserId\", b.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 invalid email format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"PostmanPass123\",\n  \"confirmPassword\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 password mismatch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{mismatchEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"confirmPassword\": \"Different123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 duplicate email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"confirmPassword\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth - POST /api/auth/login",
+      "item": [
+        {
+          "name": "01 valid login and save JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"login response has JWT\", () => { const b=pm.response.json(); pm.expect(b.data.accessToken).to.be.a(\"string\").and.not.empty; pm.expect(b.data.user.email).to.eql(pm.collectionVariables.get(\"authEmail\")); });",
+                  "const b=pm.response.json(); if (b.data?.accessToken) pm.collectionVariables.set(\"accessToken\", b.data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 wrong password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"WrongPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 unknown email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{unknownEmail}}\",\n  \"password\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 malformed email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bad\",\n  \"password\": \"PostmanPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth - GET /api/auth/me",
+      "item": [
+        {
+          "name": "01 valid JWT",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Test case for GET /api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"returns current user\", () => { const b=pm.response.json(); pm.expect(b.statusCode).to.eql(200); pm.expect(b.data.email).to.eql(pm.collectionVariables.get(\"authEmail\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 missing JWT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Test case for GET /api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 malformed JWT",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Test case for GET /api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 JSON contract",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Test case for GET /api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"response keys are stable\", () => { const b=pm.response.json(); pm.expect(b).to.have.all.keys(\"statusCode\",\"data\"); pm.expect(b.data).to.include.keys(\"id\",\"email\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Test case for GET /api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 750 ms\", () => pm.expect(pm.response.responseTime).to.be.below(750));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"email is normalized\", () => { pm.expect(pm.response.json().data.email).to.eql(pm.response.json().data.email.toLowerCase()); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - POST /api/users",
+      "item": [
+        {
+          "name": "01 create managed user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Managed User\",\n  \"email\": \"{{managedEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"Editor\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"created user contract\", () => { const b=pm.response.json(); pm.expect(b).to.include.keys(\"id\",\"email\",\"name\",\"role\",\"status\",\"createdAt\"); pm.expect(b.role).to.eql(\"Editor\"); });",
+                  "const b=pm.response.json(); if (b.id) pm.collectionVariables.set(\"managedUserId\", b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad\",\n  \"email\": \"bad\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"User\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 invalid role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad\",\n  \"email\": \"{{invalidRoleEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"Owner\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 duplicate email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate\",\n  \"email\": \"{{managedEmail}}\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"User\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - GET /api/users",
+      "item": [
+        {
+          "name": "01 default list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Test case for GET /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"pagination contract\", () => { const b=pm.response.json(); pm.expect(b.items).to.be.an(\"array\"); pm.expect(b).to.include.keys(\"total\",\"page\",\"pageSize\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 pagination",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?page=1&pageSize=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"page size honored\", () => { const b=pm.response.json(); pm.expect(b.page).to.eql(1); pm.expect(b.pageSize).to.eql(2); pm.expect(b.items.length).to.be.at.most(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 role filter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?role=Editor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "Editor"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"role filter honored\", () => { pm.expect(pm.response.json().items.every(x => x.role === \"Editor\")).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 name search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?search=Postman%20Managed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Postman%20Managed"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"name search honored\", () => { pm.expect(pm.response.json().items.some(x => x.name.includes(\"Postman Managed\"))).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 invalid pagination",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?page=0&pageSize=101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "101"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - GET /api/users/:id",
+      "item": [
+        {
+          "name": "01 existing user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "description": "Test case for GET /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"returns requested ID\", () => { pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"managedUserId\"))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 missing user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999999999"
+              ]
+            },
+            "description": "Test case for GET /api/users/999999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 malformed ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/not-a-number",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "not-a-number"
+              ]
+            },
+            "description": "Test case for GET /api/users/not-a-number"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "description": "Test case for GET /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 response contract",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "description": "Test case for GET /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 750 ms\", () => pm.expect(pm.response.responseTime).to.be.below(750));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"user has profile fields\", () => { pm.expect(pm.response.json()).to.include.keys(\"id\",\"email\",\"name\",\"role\",\"status\",\"createdAt\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - PATCH /api/users/:id",
+      "item": [
+        {
+          "name": "01 update name and status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Updated User\",\n  \"status\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"update echoed\", () => { const b=pm.response.json(); pm.expect(b.id).to.eql(Number(pm.collectionVariables.get(\"managedUserId\"))); pm.expect(b.name).to.eql(\"Postman Updated User\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 invalid email",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Owner\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 missing user",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Missing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/users/999999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 unauthorized",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Blocked\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - DELETE /api/users (batch)",
+      "item": [
+        {
+          "name": "01 empty IDs",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for DELETE /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 duplicate IDs",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    1,\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for DELETE /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid ID value",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    0\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for DELETE /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 unauthorized",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    999999999\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for DELETE /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 valid batch delete with missing IDs",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    999999998,\n    999999999\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for DELETE /api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"delete count returned\", () => { pm.expect(pm.response.json()).to.have.property(\"deleted\").that.is.a(\"number\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companies - POST /api/companies",
+      "item": [
+        {
+          "name": "01 create company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_code\": \"{{companyCode}}\",\n  \"company_name\": \"Postman Test Supplier\",\n  \"level\": 2,\n  \"country\": \"China\",\n  \"city\": \"Shanghai\",\n  \"founded_year\": 2020,\n  \"annual_revenue\": 500000,\n  \"employees\": 100,\n  \"parent_company\": \"C001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"created company contract\", () => { const b=pm.response.json(); pm.expect(b.company_code).to.eql(pm.collectionVariables.get(\"companyCode\")); pm.expect(b.level).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid level",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_code\": \"{{badCompanyCode}}\",\n  \"company_name\": \"Postman Test Supplier\",\n  \"level\": 9,\n  \"country\": \"China\",\n  \"city\": \"Shanghai\",\n  \"founded_year\": 2020,\n  \"annual_revenue\": 500000,\n  \"employees\": 100,\n  \"parent_company\": \"C001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 negative revenue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_code\": \"{{badCompanyCode}}\",\n  \"company_name\": \"Postman Test Supplier\",\n  \"level\": 2,\n  \"country\": \"China\",\n  \"city\": \"Shanghai\",\n  \"founded_year\": 2020,\n  \"annual_revenue\": -1,\n  \"employees\": 100,\n  \"parent_company\": \"C001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 duplicate code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_code\": \"{{companyCode}}\",\n  \"company_name\": \"Postman Test Supplier\",\n  \"level\": 2,\n  \"country\": \"China\",\n  \"city\": \"Shanghai\",\n  \"founded_year\": 2020,\n  \"annual_revenue\": 500000,\n  \"employees\": 100,\n  \"parent_company\": \"C001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companies - GET /api/companies",
+      "item": [
+        {
+          "name": "01 default list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ]
+            },
+            "description": "Test case for GET /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"company pagination contract\", () => { const b=pm.response.json(); pm.expect(b.items).to.be.an(\"array\"); pm.expect(b).to.include.keys(\"total\",\"page\",\"pageSize\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 pagination",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies?page=1&pageSize=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"page size honored\", () => { pm.expect(pm.response.json().items.length).to.be.at.most(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 level filter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies?level=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"level filter honored\", () => { pm.expect(pm.response.json().items.every(x => x.level === 2)).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 name search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies?search=Postman%20Test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Postman%20Test"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"company search honored\", () => { pm.expect(pm.response.json().items.some(x => x.company_code === pm.collectionVariables.get(\"companyCode\"))).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 invalid query",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies?level=9&page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies"
+              ],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "9"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Test case for GET /api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companies - GET /api/companies/:code",
+      "item": [
+        {
+          "name": "01 existing company",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for GET /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"returns requested code\", () => { pm.expect(pm.response.json().company_code).to.eql(pm.collectionVariables.get(\"companyCode\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 missing company",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/DOES_NOT_EXIST",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "DOES_NOT_EXIST"
+              ]
+            },
+            "description": "Test case for GET /api/companies/DOES_NOT_EXIST"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for GET /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 response fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for GET /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"company fields present\", () => { pm.expect(pm.response.json()).to.include.keys(\"company_code\",\"company_name\",\"level\",\"country\",\"city\",\"founded_year\",\"annual_revenue\",\"employees\",\"profit_efficiency\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for GET /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 750 ms\", () => pm.expect(pm.response.responseTime).to.be.below(750));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"profit efficiency is numeric\", () => { pm.expect(pm.response.json().profit_efficiency).to.be.a(\"number\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companies - PATCH /api/companies/:code",
+      "item": [
+        {
+          "name": "01 valid update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Postman Updated Supplier\",\n  \"employees\": 125\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"updated fields returned\", () => { const b=pm.response.json(); pm.expect(b.company_name).to.eql(\"Postman Updated Supplier\"); pm.expect(b.employees).to.eql(125); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 invalid level",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid year",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"founded_year\": 1500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 missing company",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/DOES_NOT_EXIST",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "DOES_NOT_EXIST"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Missing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/companies/DOES_NOT_EXIST"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 unauthorized",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Blocked\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for PATCH /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard - GET /api/dashboard",
+      "item": [
+        {
+          "name": "01 dashboard data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"dashboard contract\", () => { const b=pm.response.json(); pm.expect(b.stats).to.include.keys(\"companyCount\",\"totalRevenue\",\"countryCount\",\"employeeCount\"); pm.expect(b.levelDistribution).to.be.an(\"array\"); pm.expect(b.foundedTrend).to.be.an(\"array\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 stats types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"stats are numeric\", () => { Object.values(pm.response.json().stats).forEach(v => pm.expect(v).to.be.a(\"number\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 level percentages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"percentages sum near 100\", () => { const sum=pm.response.json().levelDistribution.reduce((a,x)=>a+x.percentage,0); pm.expect(sum).to.be.closeTo(100,0.01); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"trend is cumulative\", () => { const a=pm.response.json().foundedTrend.map(x=>x.cumulative); pm.expect(a.every((v,i)=>i===0||v>=a[i-1])).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard - GET /api/dashboard/barchart/options",
+      "item": [
+        {
+          "name": "01 filter options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart/options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart",
+                "options"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard/barchart/options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"options contract\", () => { const b=pm.response.json(); pm.expect(b.levels).to.eql([1,2,3,4]); pm.expect(b.countries).to.be.an(\"array\"); pm.expect(b.cities).to.be.an(\"array\"); pm.expect(b.ranges).to.include.keys(\"foundedYear\",\"annualRevenue\",\"employees\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart/options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart",
+                "options"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard/barchart/options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 range ordering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart/options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart",
+                "options"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard/barchart/options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"all min values do not exceed max\", () => { Object.values(pm.response.json().ranges).forEach(r => pm.expect(r.min).to.be.at.most(r.max)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 unique options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart/options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart",
+                "options"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard/barchart/options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"countries and cities are unique\", () => { const b=pm.response.json(); pm.expect(new Set(b.countries).size).to.eql(b.countries.length); pm.expect(new Set(b.cities).size).to.eql(b.cities.length); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart/options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart",
+                "options"
+              ]
+            },
+            "description": "Test case for GET /api/dashboard/barchart/options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1000));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"options are non-empty\", () => { const b=pm.response.json(); pm.expect(b.countries.length).to.be.above(0); pm.expect(b.cities.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard - POST /api/dashboard/barchart",
+      "item": [
+        {
+          "name": "01 group by level",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimension\": \"level\",\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/barchart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"bar response contract\", () => { const b=pm.response.json(); pm.expect(b.dimension).to.eql(\"level\"); pm.expect(b.total).to.be.a(\"number\"); pm.expect(b.data).to.be.an(\"array\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 country filter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimension\": \"city\",\n  \"filter\": {\n    \"country\": [\n      \"China\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/barchart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"filtered total is positive\", () => { pm.expect(pm.response.json().total).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 invalid dimension",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimension\": \"industry\",\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/barchart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 reversed range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimension\": \"level\",\n  \"filter\": {\n    \"employees\": {\n      \"min\": 1000,\n      \"max\": 10\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/barchart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 unauthorized",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/barchart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "barchart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimension\": \"level\",\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/barchart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard - POST /api/dashboard/bubblechart",
+      "item": [
+        {
+          "name": "01 full hierarchy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/bubblechart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "bubblechart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/bubblechart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"bubble response contract\", () => { const b=pm.response.json(); pm.expect(b.total).to.be.a(\"number\"); pm.expect(b.hierarchy.code).to.eql(\"ROOT\"); pm.expect(b.hierarchy.children).to.be.an(\"array\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 level filter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/bubblechart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "bubblechart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"level\": [\n      2\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/bubblechart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"total equals matched hierarchy nodes\", () => { const b=pm.response.json(); const walk=n=>[n,...(n.children||[]).flatMap(walk)]; const matched=walk(b.hierarchy).filter(n=>n.matched).length; pm.expect(b.total).to.eql(matched); pm.expect(b.total).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 combined empty result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/bubblechart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "bubblechart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"country\": [\n      \"Nowhere\"\n    ],\n    \"city\": [\n      \"Missing\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/bubblechart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"empty hierarchy is valid\", () => { const b=pm.response.json(); pm.expect(b.total).to.eql(0); pm.expect(b.hierarchy.children).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 reversed range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/bubblechart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "bubblechart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"annual_revenue\": {\n      \"min\": 500000,\n      \"max\": 100\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/bubblechart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 unauthorized",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/bubblechart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "bubblechart"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Test case for POST /api/dashboard/bubblechart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companies - DELETE /api/companies/:code",
+      "item": [
+        {
+          "name": "01 delete existing company",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for DELETE /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"deleted code returned\", () => { pm.expect(pm.response.json().company_code).to.eql(pm.collectionVariables.get(\"companyCode\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 delete same company again",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for DELETE /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 delete missing company",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/DOES_NOT_EXIST",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "DOES_NOT_EXIST"
+              ]
+            },
+            "description": "Test case for DELETE /api/companies/DOES_NOT_EXIST"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 unauthorized",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/C001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "C001"
+              ]
+            },
+            "description": "Test case for DELETE /api/companies/C001"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 verify deleted company is absent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/{{companyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "{{companyCode}}"
+              ]
+            },
+            "description": "Test case for GET /api/companies/{{companyCode}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users - DELETE /api/users/:id and cleanup",
+      "item": [
+        {
+          "name": "01 malformed ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/not-a-number",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "not-a-number"
+              ]
+            },
+            "description": "Test case for DELETE /api/users/not-a-number"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 missing user",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999999999"
+              ]
+            },
+            "description": "Test case for DELETE /api/users/999999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 unauthorized",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "description": "Test case for DELETE /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"error response contains message\", () => { const b=pm.response.json(); pm.expect(b).to.have.property(\"message\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 delete managed user",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{managedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{managedUserId}}"
+              ]
+            },
+            "description": "Test case for DELETE /api/users/{{managedUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"deleted ID returned\", () => { pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"managedUserId\"))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 delete current test user",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{authUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{authUserId}}"
+              ]
+            },
+            "description": "Test case for DELETE /api/users/{{authUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"response time is below 1500 ms\", () => pm.expect(pm.response.responseTime).to.be.below(1500));",
+                  "pm.test(\"content type is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "pm.test(\"response body is valid JSON\", () => pm.expect(() => pm.response.json()).not.to.throw());",
+                  "pm.test(\"auth test user deleted\", () => { pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"authUserId\"))); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

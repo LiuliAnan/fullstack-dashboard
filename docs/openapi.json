@@ -1,0 +1,2159 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/auth/signup": {
+      "post": {
+        "operationId": "UserController_signUp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty fields, invalid format, or passwords do not match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email is already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register a new user account",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "UserManageController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Comma-separated roles",
+            "schema": {
+              "example": "Admin,Manager",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive name search",
+            "schema": {
+              "example": "Jane",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedUsersDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination, role, or search query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List users with pagination, role filter, and name search",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "operationId": "UserManageController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty or invalid user fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a user and profile",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UserManageController_removeMany",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteUsersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteUsersResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "IDs must be a non-empty array of unique positive integers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete multiple users",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "operationId": "UserManageController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive integer user ID",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID is not an integer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get one user",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UserManageController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive integer user ID",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID or update fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update a user and profile",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UserManageController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive integer user ID",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteUserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID is not an integer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete one user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "Validates credentials and returns a JWT access token for authenticated API calls.",
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Credentials accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty, malformed email, or invalid password length",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email does not exist or password is incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Log in with email and password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authenticated JWT payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get the authenticated user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/companies": {
+      "get": {
+        "operationId": "CompanyController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "description": "Comma-separated levels from 1 to 4",
+            "schema": {
+              "example": "1,2",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive company name search",
+            "schema": {
+              "example": "Doyle",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCompaniesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination, level, or search query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List companies with pagination, level filter, and name search",
+        "tags": [
+          "Companies"
+        ]
+      },
+      "post": {
+        "operationId": "CompanyController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCompanyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty or invalid company fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Company code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a company and relationship",
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/companies/{code}": {
+      "get": {
+        "operationId": "CompanyController_findOne",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "description": "Company code",
+            "schema": {
+              "example": "C001",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Company not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get one company",
+        "tags": [
+          "Companies"
+        ]
+      },
+      "patch": {
+        "operationId": "CompanyController_update",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "description": "Company code",
+            "schema": {
+              "example": "C001",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid update fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Company not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update a company and relationship",
+        "tags": [
+          "Companies"
+        ]
+      },
+      "delete": {
+        "operationId": "CompanyController_remove",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "description": "Company code",
+            "schema": {
+              "example": "C1001",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCompanyDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Company not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete one company",
+        "tags": [
+          "Companies"
+        ]
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "operationId": "DashboardController_getDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get dashboard cards, level distribution, and founded-year trend",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/dashboard/barchart/options": {
+      "get": {
+        "operationId": "DashboardController_getBarChartOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarChartOptionsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get available bar-chart filters and numeric ranges",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/dashboard/barchart": {
+      "post": {
+        "operationId": "DashboardController_getCompaniesByFilter",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BarChartQueryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarChartResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid dimension, filter values, or reversed range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Group companies by a dimension using combined filters",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/api/dashboard/bubblechart": {
+      "post": {
+        "operationId": "DashboardController_getCompanyHierarchy",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BubbleChartQueryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BubbleChartResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter values or reversed range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get a filtered company hierarchy for the zoomable bubble chart",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Dashboard API",
+    "description": "Authentication, user management, company management, and dashboard aggregation APIs.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, and current-user endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User management endpoints"
+    },
+    {
+      "name": "Companies",
+      "description": "Company and relationship management endpoints"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard aggregation endpoints"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "access-token": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "SignUpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "SecurePass123",
+            "minLength": 6,
+            "maxLength": 50
+          },
+          "confirmPassword": {
+            "type": "string",
+            "example": "SecurePass123"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "confirmPassword"
+        ]
+      },
+      "BasicUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@example.com"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-26T02:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "SignupResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "User registered successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BasicUserDto"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "data"
+        ]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "example": [
+              "email must be an email"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "UserViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Jane Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Admin",
+              "Manager",
+              "Editor",
+              "User"
+            ],
+            "example": "User"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "banned",
+              "pending"
+            ],
+            "example": "active"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-26T02:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role",
+          "status",
+          "createdAt"
+        ]
+      },
+      "PaginatedUsersDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserViewDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 10
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "SecurePass123",
+            "minLength": 6,
+            "maxLength": 50
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Admin",
+              "Manager",
+              "Editor",
+              "User"
+            ],
+            "example": "User"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "banned",
+              "pending"
+            ],
+            "example": "active"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role",
+          "status"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "SecurePass123",
+            "minLength": 6,
+            "maxLength": 50
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Admin",
+              "Manager",
+              "Editor",
+              "User"
+            ],
+            "example": "User"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "banned",
+              "pending"
+            ],
+            "example": "active"
+          }
+        }
+      },
+      "DeleteUsersDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "DeleteUsersResultDto": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "deleted"
+        ]
+      },
+      "DeleteUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 12
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "SecurePass123",
+            "minLength": 6,
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "LoginDataDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "user": {
+            "$ref": "#/components/schemas/BasicUserDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "user"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Login successful"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LoginDataDto"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "data"
+        ]
+      },
+      "MeResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/BasicUserDto"
+          }
+        },
+        "required": [
+          "statusCode",
+          "data"
+        ]
+      },
+      "CompanyViewDto": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string",
+            "example": "C1001"
+          },
+          "company_name": {
+            "type": "string",
+            "example": "Example Supplier Ltd"
+          },
+          "level": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 2
+          },
+          "country": {
+            "type": "string",
+            "example": "China"
+          },
+          "city": {
+            "type": "string",
+            "example": "Shanghai"
+          },
+          "founded_year": {
+            "type": "number",
+            "example": 2001
+          },
+          "annual_revenue": {
+            "type": "number",
+            "example": 1000000
+          },
+          "employees": {
+            "type": "number",
+            "example": 120
+          },
+          "parent_company": {
+            "type": "object",
+            "example": "C1000",
+            "nullable": true
+          },
+          "parent_company_name": {
+            "type": "object",
+            "example": "Parent Supplier Ltd",
+            "nullable": true
+          },
+          "profit_efficiency": {
+            "type": "number",
+            "example": 8333
+          }
+        },
+        "required": [
+          "company_code",
+          "company_name",
+          "level",
+          "country",
+          "city",
+          "founded_year",
+          "annual_revenue",
+          "employees"
+        ]
+      },
+      "PaginatedCompaniesDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyViewDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 2000
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 10
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "CreateCompanyDto": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string",
+            "example": "C1001"
+          },
+          "company_name": {
+            "type": "string",
+            "example": "Example Supplier Ltd"
+          },
+          "level": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 2
+          },
+          "country": {
+            "type": "string",
+            "example": "China"
+          },
+          "city": {
+            "type": "string",
+            "example": "Shanghai"
+          },
+          "founded_year": {
+            "type": "number",
+            "minimum": 1800,
+            "maximum": 2100,
+            "example": 2001
+          },
+          "annual_revenue": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1000000
+          },
+          "employees": {
+            "type": "number",
+            "minimum": 0,
+            "example": 120
+          },
+          "parent_company": {
+            "type": "string",
+            "example": "C1000",
+            "nullable": true
+          }
+        },
+        "required": [
+          "company_code",
+          "company_name",
+          "level",
+          "country",
+          "city",
+          "founded_year",
+          "annual_revenue",
+          "employees"
+        ]
+      },
+      "UpdateCompanyDto": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string",
+            "example": "C1001"
+          },
+          "company_name": {
+            "type": "string",
+            "example": "Example Supplier Ltd"
+          },
+          "level": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 2
+          },
+          "country": {
+            "type": "string",
+            "example": "China"
+          },
+          "city": {
+            "type": "string",
+            "example": "Shanghai"
+          },
+          "founded_year": {
+            "type": "number",
+            "minimum": 1800,
+            "maximum": 2100,
+            "example": 2001
+          },
+          "annual_revenue": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1000000
+          },
+          "employees": {
+            "type": "number",
+            "minimum": 0,
+            "example": 120
+          },
+          "parent_company": {
+            "type": "string",
+            "example": "C1000",
+            "nullable": true
+          }
+        }
+      },
+      "DeleteCompanyDto": {
+        "type": "object",
+        "properties": {
+          "company_code": {
+            "type": "string",
+            "example": "C1001"
+          }
+        },
+        "required": [
+          "company_code"
+        ]
+      },
+      "DashboardStatsDto": {
+        "type": "object",
+        "properties": {
+          "companyCount": {
+            "type": "number",
+            "example": 2000
+          },
+          "totalRevenue": {
+            "type": "number",
+            "example": 182779175
+          },
+          "countryCount": {
+            "type": "number",
+            "example": 8
+          },
+          "employeeCount": {
+            "type": "number",
+            "example": 699119
+          }
+        },
+        "required": [
+          "companyCount",
+          "totalRevenue",
+          "countryCount",
+          "employeeCount"
+        ]
+      },
+      "LevelDistributionDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "number",
+            "example": 1
+          },
+          "count": {
+            "type": "number",
+            "example": 1
+          },
+          "percentage": {
+            "type": "number",
+            "example": 0.05
+          }
+        },
+        "required": [
+          "level",
+          "count",
+          "percentage"
+        ]
+      },
+      "FoundedTrendDto": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "number",
+            "example": 1900
+          },
+          "cumulative": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "year",
+          "cumulative"
+        ]
+      },
+      "DashboardResponseDto": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/DashboardStatsDto"
+          },
+          "levelDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelDistributionDto"
+            }
+          },
+          "foundedTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FoundedTrendDto"
+            }
+          }
+        },
+        "required": [
+          "stats",
+          "levelDistribution",
+          "foundedTrend"
+        ]
+      },
+      "NumericRangeDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number",
+            "example": 1900
+          },
+          "max": {
+            "type": "number",
+            "example": 2023
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ]
+      },
+      "DashboardRangesDto": {
+        "type": "object",
+        "properties": {
+          "foundedYear": {
+            "$ref": "#/components/schemas/NumericRangeDto"
+          },
+          "annualRevenue": {
+            "$ref": "#/components/schemas/NumericRangeDto"
+          },
+          "employees": {
+            "$ref": "#/components/schemas/NumericRangeDto"
+          }
+        },
+        "required": [
+          "foundedYear",
+          "annualRevenue",
+          "employees"
+        ]
+      },
+      "BarChartOptionsDto": {
+        "type": "object",
+        "properties": {
+          "levels": {
+            "example": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "countries": {
+            "example": [
+              "China",
+              "USA"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cities": {
+            "example": [
+              "Beijing",
+              "New York"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ranges": {
+            "$ref": "#/components/schemas/DashboardRangesDto"
+          }
+        },
+        "required": [
+          "levels",
+          "countries",
+          "cities",
+          "ranges"
+        ]
+      },
+      "YearRangeDto": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "number",
+            "example": 1950,
+            "minimum": 1800,
+            "maximum": 2100
+          },
+          "end": {
+            "type": "number",
+            "example": 2023,
+            "minimum": 1800,
+            "maximum": 2100
+          }
+        }
+      },
+      "NumberRangeDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number",
+            "example": 0,
+            "minimum": 0
+          },
+          "max": {
+            "type": "number",
+            "example": 1000000,
+            "minimum": 0
+          }
+        }
+      },
+      "CompanyBarChartFilterDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "country": {
+            "example": [
+              "China",
+              "USA"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "city": {
+            "example": [
+              "Beijing",
+              "New York"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "founded_year": {
+            "$ref": "#/components/schemas/YearRangeDto"
+          },
+          "annual_revenue": {
+            "$ref": "#/components/schemas/NumberRangeDto"
+          },
+          "employees": {
+            "$ref": "#/components/schemas/NumberRangeDto"
+          }
+        }
+      },
+      "BarChartQueryDto": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "level",
+              "country",
+              "city"
+            ],
+            "example": "country"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/CompanyBarChartFilterDto"
+          }
+        },
+        "required": [
+          "dimension",
+          "filter"
+        ]
+      },
+      "BarChartDataDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "China"
+          },
+          "count": {
+            "type": "number",
+            "example": 120
+          },
+          "percentage": {
+            "type": "number",
+            "example": 56.07
+          }
+        },
+        "required": [
+          "label",
+          "count",
+          "percentage"
+        ]
+      },
+      "BarChartResponseDto": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "level",
+              "country",
+              "city"
+            ],
+            "example": "country"
+          },
+          "total": {
+            "type": "number",
+            "example": 214
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BarChartDataDto"
+            }
+          }
+        },
+        "required": [
+          "dimension",
+          "total",
+          "data"
+        ]
+      },
+      "BubbleChartQueryDto": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "$ref": "#/components/schemas/CompanyBarChartFilterDto"
+          }
+        },
+        "required": [
+          "filter"
+        ]
+      },
+      "HierarchyNodeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Example Supplier Ltd"
+          },
+          "code": {
+            "type": "string",
+            "example": "C1001"
+          },
+          "level": {
+            "type": "number",
+            "example": 2
+          },
+          "country": {
+            "type": "string",
+            "example": "China"
+          },
+          "city": {
+            "type": "string",
+            "example": "Shanghai"
+          },
+          "foundedYear": {
+            "type": "number",
+            "example": 2001
+          },
+          "annualRevenue": {
+            "type": "number",
+            "example": 1000000
+          },
+          "employees": {
+            "type": "number",
+            "example": 120
+          },
+          "value": {
+            "type": "number",
+            "example": 1
+          },
+          "matched": {
+            "type": "boolean",
+            "example": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HierarchyNodeDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "level",
+          "value",
+          "children"
+        ]
+      },
+      "BubbleChartResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 50
+          },
+          "hierarchy": {
+            "$ref": "#/components/schemas/HierarchyNodeDto"
+          }
+        },
+        "required": [
+          "total",
+          "hierarchy"
+        ]
+      }
+    }
+  }
+}

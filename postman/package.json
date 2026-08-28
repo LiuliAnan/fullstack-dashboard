@@ -1,0 +1,12 @@
+{
+  "name": "dashboard-api-postman-tests",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-collection.mjs",
+    "test": "npm run generate && newman run api.postman_collection.json -e local.postman_environment.json --reporters cli,json,htmlextra --reporter-json-export reports/newman-report.json --reporter-htmlextra-export reports/newman-report.html --reporter-htmlextra-title 'Dashboard API Test Report'"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}

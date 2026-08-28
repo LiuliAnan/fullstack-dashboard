@@ -183,17 +183,21 @@ describe('Application E2E', () => {
           employees: { min: 0, max: 5000 },
         },
       })
-      .expect(201);
+      .expect(200);
 
     expect(response.body.dimension).toBe('level');
     expect(response.body.total).toBeGreaterThan(0);
-    expect(response.body.data.every((item: { label: string }) =>
-      ['1', '2', '3'].includes(item.label),
-    )).toBe(true);
-    expect(response.body.data.reduce(
-      (sum: number, item: { percentage: number }) => sum + item.percentage,
-      0,
-    )).toBeCloseTo(100);
+    expect(
+      response.body.data.every((item: { label: string }) =>
+        ['1', '2', '3'].includes(item.label),
+      ),
+    ).toBe(true);
+    expect(
+      response.body.data.reduce(
+        (sum: number, item: { percentage: number }) => sum + item.percentage,
+        0,
+      ),
+    ).toBeCloseTo(100);
   });
 
   it('validates the bar-chart dimension and range order', async () => {
@@ -232,16 +236,27 @@ describe('Application E2E', () => {
           employees: {},
         },
       })
-      .expect(201);
+      .expect(200);
 
-    type Node = { code: string; level: number; country?: string; matched?: boolean; children?: Node[] };
-    const flatten = (nodes: Node[]): Node[] => nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
+    type Node = {
+      code: string;
+      level: number;
+      country?: string;
+      matched?: boolean;
+      children?: Node[];
+    };
+    const flatten = (nodes: Node[]): Node[] =>
+      nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
     const nodes = flatten(response.body.hierarchy.children);
     const matchedNodes = nodes.filter((node) => node.matched);
     expect(response.body.total).toBe(expected[0].count);
     expect(new Set(nodes.map((node) => node.code)).size).toBe(nodes.length);
     expect(matchedNodes).toHaveLength(expected[0].count);
-    expect(matchedNodes.every((node) => [1, 2].includes(node.level) && node.country === 'China')).toBe(true);
+    expect(
+      matchedNodes.every(
+        (node) => [1, 2].includes(node.level) && node.country === 'China',
+      ),
+    ).toBe(true);
     expect(nodes.length).toBeGreaterThanOrEqual(matchedNodes.length);
 
     const expectedLeafCompanies = await dataSource.query(
@@ -251,7 +266,7 @@ describe('Application E2E', () => {
       .post('/api/dashboard/bubblechart')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ filter: { level: [4] } })
-      .expect(201);
+      .expect(200);
     const leafTreeNodes = flatten(leafResponse.body.hierarchy.children);
     const matchedLeafNodes = leafTreeNodes.filter((node) => node.matched);
     expect(leafResponse.body.total).toBe(expectedLeafCompanies[0].count);

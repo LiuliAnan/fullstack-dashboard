@@ -1,7 +1,17 @@
 import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { UserService } from './user.service';
 import { SignUpDto } from './dto/sign-up.dto';
-import { ApiConflictResponse, ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  ErrorResponseDto,
+  SignupResponseDto,
+} from '../common/swagger/api-models';
 
 @ApiTags('Auth')
 @Controller('api/auth')
@@ -10,8 +20,18 @@ export class UserController {
 
   @Post('signup')
   @ApiOperation({ summary: 'Register a new user account' })
-  @ApiCreatedResponse({ description: 'User registered successfully' })
-  @ApiConflictResponse({ description: 'Email is already registered' })
+  @ApiCreatedResponse({
+    type: SignupResponseDto,
+    description: 'User registered successfully',
+  })
+  @ApiBadRequestResponse({
+    type: ErrorResponseDto,
+    description: 'Empty fields, invalid format, or passwords do not match',
+  })
+  @ApiConflictResponse({
+    type: ErrorResponseDto,
+    description: 'Email is already registered',
+  })
   @HttpCode(201)
   async signUp(@Body() dto: SignUpDto) {
     const user = await this.userService.create(dto);

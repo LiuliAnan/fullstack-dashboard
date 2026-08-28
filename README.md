@@ -214,6 +214,37 @@ cd ../frontend && npm run build
 
 启动后端后访问 Swagger UI：`http://localhost:3001/api/docs`。OpenAPI JSON 位于 `http://localhost:3001/api/docs-json`。受保护接口可在 Swagger 的 **Authorize** 中填写登录返回的 JWT。
 
+当前 18 条后端接口已经全部纳入 Swagger，包含请求 DTO、字段校验约束、JWT 安全标记、路径/查询参数、成功响应及常见 400/401/404/409 异常响应。相关交付物：
+
+- `docs/openapi.json`：从运行中的 NestJS 服务导出的 OpenAPI 3 文档
+- `output/pdf/swagger.pdf`：12 页 A4 Swagger 打印版
+- `postman/reports/screenshots/swagger-ui.png`：Swagger UI 截图
+
+重新导出并校验文档：
+
+```bash
+cd backend
+node scripts/export-openapi.mjs ../docs/openapi.json
+```
+
+### Postman 自动化接口测试
+
+`postman/api.postman_collection.json` 覆盖全部 18 条 API，共 90 个测试请求、450 条自动断言，平均每条接口 5 个场景。测试范围包括连通性与状态码、空值与非法格式、JWT 权限、返回 JSON 内容与结构、业务值、响应时间，以及测试数据的 CRUD 创建和清理。
+
+```bash
+cd postman
+npm install
+npm test
+```
+
+Postman 桌面版可直接导入 collection 与 `local.postman_environment.json`。Newman 报告位于：
+
+- `postman/reports/newman-report.html`：可视化测试报告
+- `postman/reports/newman-report.json`：机器可读完整结果
+- `postman/reports/screenshots/newman-summary.png`：测试结果截图
+
+最近一次本地回归结果（2026-08-26）：90/90 请求成功，450/450 断言通过，失败和跳过均为 0。测试脚本参考 [Postman 官方测试示例](https://learning.postman.com/docs/tests-and-scripts/write-scripts/test-examples/)，接口文档基于 [Swagger/OpenAPI 文档](https://swagger.org.cn/docs/)。
+
 ### 认证接口 `/api/auth`
 
 | 方法 | 路径 | 说明 |
