@@ -15,6 +15,7 @@ const NAV_TABS = [
   { label: 'Company', path: '/company' },
   { label: 'Order', path: '/order' },
   { label: 'User', path: '/user' },
+  { label: 'Agent Tasks', path: '/agent-tasks' },
 ];
 
 export default function NavBar() {

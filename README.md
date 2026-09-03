@@ -214,10 +214,62 @@ cd ../frontend && npm run build
 
 启动后端后访问 Swagger UI：`http://localhost:3001/api/docs`。OpenAPI JSON 位于 `http://localhost:3001/api/docs-json`。受保护接口可在 Swagger 的 **Authorize** 中填写登录返回的 JWT。
 
-当前 18 条后端接口已经全部纳入 Swagger，包含请求 DTO、字段校验约束、JWT 安全标记、路径/查询参数、成功响应及常见 400/401/404/409 异常响应。相关交付物：
+## AI Assistant
+
+登录后的所有业务页面右下角均提供全局 AI Assistant 悬浮入口。聊天窗口支持 Markdown、表格、图表卡片、报表预览、人工确认、附件上传及多轮历史恢复；导航栏的 `Agent Tasks` 页面提供任务进度表格示例。
+
+后端 AI 模块使用统一模型适配器，可通过环境变量切换 Mock、OpenAI、DeepSeek、Qwen 或 Kimi：
+
+```env
+AI_MODEL_PROVIDER=mock
+OPENAI_API_KEY=
+DEEPSEEK_API_KEY=
+QWEN_API_KEY=
+KIMI_API_KEY=
+```
+
+未配置外部模型密钥时使用 `mock`，仍可完整验证多轮对话、数据库持久化和刷新恢复。真实模型均通过 OpenAI-compatible `chat/completions` 协议调用，也可通过对应的 `*_BASE_URL` 和 `*_MODEL` 环境变量覆盖地址与模型。
+
+当前推荐的 DeepSeek 配置如下。真实密钥只填写在被 Git 忽略的 `backend/.env`，不要写入 `.env.example`、README 或提交记录：
+
+```env
+AI_MODEL_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your-api-key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+修改配置后重启后端。新建会话会读取当前默认供应商和模型；也可以在创建会话时提交 `provider` 与 `model`，让不同会话使用不同模型。已经创建的会话继续使用其数据库中保存的模型配置。
+
+```json
+{
+  "title": "DeepSeek conversation",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash"
+}
+```
+
+本地联调已通过 DeepSeek `/models` 可用性检查及项目 `/api/ai-agent/chat` 两轮真实对话验证。若 API Key 缺失、无效或供应商不可访问，后端会返回明确的 502 错误，而不会将密钥返回给前端。
+
+会话数据保存在 PostgreSQL 的 `ai_chat_sessions` 和 `ai_chat_messages` 表中。浏览器只在 localStorage 保存当前会话 ID、窗口状态和未发送草稿，正式消息记录以数据库为准。
+
+AI Agent API：
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/ai-agent/sessions` | 创建会话 |
+| GET | `/api/ai-agent/sessions` | 获取当前用户会话 |
+| GET | `/api/ai-agent/sessions/:id` | 加载会话和历史消息 |
+| DELETE | `/api/ai-agent/sessions/:id` | 删除会话 |
+| POST | `/api/ai-agent/chat` | 发送消息并调用当前模型 |
+| POST | `/api/ai-agent/files` | 上传聊天附件 |
+
+附件支持 PDF、TXT、CSV、PNG、JPG/JPEG；一次最多 5 个，单文件最大 10 MB。附件存放在后端 `uploads/ai-agent` 目录，该目录不应提交到版本库。
+
+当前 24 条后端接口已经全部纳入实时 Swagger 与 OpenAPI JSON，包含请求 DTO、字段校验约束、JWT 安全标记、路径/查询参数、成功响应及常见异常响应。上一阶段的打印与 Postman 交付物仍保留在仓库中：
 
 - `docs/openapi.json`：从运行中的 NestJS 服务导出的 OpenAPI 3 文档
-- `output/pdf/swagger.pdf`：12 页 A4 Swagger 打印版
+- `output/pdf/swagger.pdf`：上一阶段 18 条基础接口的 A4 Swagger 打印版
 - `postman/reports/screenshots/swagger-ui.png`：Swagger UI 截图
 
 重新导出并校验文档：

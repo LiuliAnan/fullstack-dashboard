@@ -30,8 +30,9 @@ for (const { path, method, operation } of operations) {
   }
 }
 
-if (operations.length !== 18) {
-  problems.push(`Expected 18 operations, found ${operations.length}`);
+const expectedOperations = Number(process.env.EXPECTED_OPENAPI_OPERATIONS || 24);
+if (operations.length !== expectedOperations) {
+  problems.push(`Expected ${expectedOperations} operations, found ${operations.length}`);
 }
 
 await mkdir(dirname(outputPath), { recursive: true });

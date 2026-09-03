@@ -4,6 +4,8 @@ import { User } from '../user/user.entity';
 import { UserProfile } from '../user/user-profile.entity';
 import { Company } from '../company/company.entity';
 import { Relationship } from '../company/relationship.entity';
+import { AiChatSession } from '../ai-agent/entities/ai-chat-session.entity';
+import { AiChatMessage } from '../ai-agent/entities/ai-chat-message.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -12,7 +14,14 @@ export default new DataSource({
   username: process.env.DB_USERNAME || 'devuser',
   password: process.env.DB_PASSWORD || 'devpass',
   database: process.env.DB_DATABASE || 'week1_env',
-  entities: [User, UserProfile, Company, Relationship],
+  entities: [
+    User,
+    UserProfile,
+    Company,
+    Relationship,
+    AiChatSession,
+    AiChatMessage,
+  ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false,
 });

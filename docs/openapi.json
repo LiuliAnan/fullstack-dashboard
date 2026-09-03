@@ -1119,6 +1119,197 @@
           "Dashboard"
         ]
       }
+    },
+    "/api/ai-agent/sessions": {
+      "post": {
+        "operationId": "AiChatController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created"
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create an AI chat session",
+        "tags": [
+          "AI Agent"
+        ]
+      },
+      "get": {
+        "operationId": "AiChatController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sessions ordered by recent activity"
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List the current user chat sessions",
+        "tags": [
+          "AI Agent"
+        ]
+      }
+    },
+    "/api/ai-agent/sessions/{id}": {
+      "get": {
+        "operationId": "AiChatController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Load one chat session with message history",
+        "tags": [
+          "AI Agent"
+        ]
+      },
+      "delete": {
+        "operationId": "AiChatController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete one chat session and its messages",
+        "tags": [
+          "AI Agent"
+        ]
+      }
+    },
+    "/api/ai-agent/chat": {
+      "post": {
+        "operationId": "AiChatController_send",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User and assistant messages persisted"
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Send a message and receive a model response",
+        "tags": [
+          "AI Agent"
+        ]
+      }
+    },
+    "/api/ai-agent/files": {
+      "post": {
+        "operationId": "AiChatController_upload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Upload up to five chat attachments",
+        "tags": [
+          "AI Agent"
+        ]
+      }
     }
   },
   "info": {
@@ -1143,6 +1334,10 @@
     {
       "name": "Dashboard",
       "description": "Dashboard aggregation endpoints"
+    },
+    {
+      "name": "AI Agent",
+      "description": "Persistent conversations, model chat, and file uploads"
     }
   ],
   "servers": [],
@@ -2152,6 +2347,79 @@
         "required": [
           "total",
           "hierarchy"
+        ]
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Supply chain analysis"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "openai",
+              "deepseek",
+              "qwen",
+              "kimi"
+            ],
+            "default": "mock"
+          },
+          "model": {
+            "type": "string",
+            "example": "deepseek-chat"
+          }
+        }
+      },
+      "ChatAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mimeType",
+          "size",
+          "url"
+        ]
+      },
+      "SendMessageDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatAttachmentDto"
+            }
+          }
+        },
+        "required": [
+          "sessionId",
+          "message"
         ]
       }
     }

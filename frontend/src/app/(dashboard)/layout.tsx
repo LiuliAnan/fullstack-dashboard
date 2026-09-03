@@ -1,6 +1,7 @@
 import { Container } from '@mui/material';
 import AuthGuard from '@/components/AuthGuard';
 import NavBar from '@/components/NavBar';
+import { AgentFloatingEntry } from '@/features/ai-agent';
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         {children}
       </Container>
+      <AgentFloatingEntry />
     </AuthGuard>
   );
 }

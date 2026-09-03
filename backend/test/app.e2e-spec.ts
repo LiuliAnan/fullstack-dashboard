@@ -40,6 +40,9 @@ describe('Application E2E', () => {
     await request(app.getHttpServer()).get('/api/users').expect(401);
     await request(app.getHttpServer()).get('/api/companies').expect(401);
     await request(app.getHttpServer()).get('/api/dashboard').expect(401);
+    await request(app.getHttpServer())
+      .get('/api/ai-agent/sessions')
+      .expect(401);
   });
 
   it('registers a normalized user and creates the profile transactionally', async () => {
@@ -279,6 +282,68 @@ describe('Application E2E', () => {
       .post('/api/dashboard/bubblechart')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ filter: { annual_revenue: { min: 500, max: 100 } } })
+      .expect(400);
+  });
+
+  it('persists a multi-turn AI conversation and reloads its history', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/ai-agent/sessions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ title: 'E2E conversation', provider: 'mock' })
+      .expect(201);
+    const sessionId = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .post('/api/ai-agent/chat')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ sessionId, message: 'First question' })
+      .expect(200)
+      .expect(({ body }) => expect(body.provider).toBe('mock'));
+
+    await request(app.getHttpServer())
+      .post('/api/ai-agent/chat')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ sessionId, message: 'Second question' })
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body.assistantMessage.content.text).toContain('2 轮'),
+      );
+
+    await request(app.getHttpServer())
+      .get(`/api/ai-agent/sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200)
+      .expect(({ body }) => expect(body.messages).toHaveLength(4));
+
+    await request(app.getHttpServer())
+      .post('/api/ai-agent/chat')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ sessionId, message: '   ' })
+      .expect(400);
+  });
+
+  it('accepts supported chat attachments', async () => {
+    await request(app.getHttpServer())
+      .post('/api/ai-agent/files')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .attach('files', Buffer.from('agent upload test'), {
+        filename: 'note.txt',
+        contentType: 'text/plain',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(1);
+        expect(body[0].name).toBe('note.txt');
+        expect(body[0].mimeType).toBe('text/plain');
+      });
+
+    await request(app.getHttpServer())
+      .post('/api/ai-agent/files')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .attach('files', Buffer.from('not allowed'), {
+        filename: 'script.exe',
+        contentType: 'application/octet-stream',
+      })
       .expect(400);
   });
 
