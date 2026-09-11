@@ -7,13 +7,20 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
+  Check,
 } from 'typeorm';
 import { User } from '../../user/user.entity';
 import { AiChatMessage } from './ai-chat-message.entity';
 
-@Entity('ai_chat_sessions')
+@Entity('ai_chat_session')
+@Index('IDX_ai_session_owner', ['tenantId', 'userId', 'updatedAt'])
+@Index('UQ_ai_session_scope', ['id', 'tenantId', 'userId'], { unique: true })
+@Check('CHK_ai_session_status', "status IN ('active','closed')")
 export class AiChatSession {
   @PrimaryGeneratedColumn('uuid') id: string;
+  @Column({ name: 'tenant_id', length: 64 }) tenantId: string;
+  @Column({ default: 1 }) version: number;
   @Column({ name: 'user_id' }) userId: number;
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

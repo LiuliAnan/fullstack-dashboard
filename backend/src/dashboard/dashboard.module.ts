@@ -9,5 +9,6 @@ import { DashboardController } from './dashboard.controller';
   imports: [TypeOrmModule.forFeature([Company, Relationship])],
   controllers: [DashboardController],
   providers: [DashboardService],
+  exports: [DashboardService],
 })
 export class DashboardModule {}

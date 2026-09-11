@@ -15,7 +15,7 @@
 | ORM | TypeORM | 1.x |
 | 数据库 | PostgreSQL 16 | Docker |
 | 向量扩展 | pgvector | Docker 镜像内置，迁移自动启用 |
-| 缓存基础设施 | Redis 7 | Docker（已准备，当前业务未接入缓存） |
+| 缓存 | Redis 7 | AI 会话、聊天结果、任务状态及 Checkpointer |
 | 图表 | Chart.js + react-chartjs-2、D3 | 4.x / 5.x / 7.x |
 | 认证 | JWT (passport-jwt) | 24h 有效期 |
 | 密码加密 | bcrypt | salt rounds = 10 |
@@ -35,6 +35,20 @@
 - **API 文档**：Swagger UI + OpenAPI JSON
 - **数据导入**：启动时自动从 CSV 导入 2000 条公司 + 关系数据
 - **可扩展导航栏**：Tab 数组定义，新增页面只需加一行
+- **AI 基础能力**：多模型聊天、会话/记忆/任务/审计 CRUD、JWT 与用户/租户隔离、Redis 短期记忆和结果缓存、LangGraph Checkpointer 适配。
+- **AI 调用业务 Service**：通过后端工具接口或聊天 API 的显式 `companyQuery` 参数，复用现有 DashboardService；不新增自然语言意图识别、聊天命令或专项查询按钮。
+
+## AI 核心能力交付
+
+详细配置、表结构、接口、权限、缓存规则和验收步骤见 [AI 开发与验收文档](docs/ai-foundation.md)。
+
+- 核心表：`ai_chat_session`、`ai_user_memory`、`ai_task_record`、`ai_operation_audit`；保留 `ai_chat_messages` 明细表。
+- 迁移将旧 `ai_chat_sessions` 改名并保留历史；本次没有修改原业务表结构。请勿在有新 AI 数据的环境中随意执行回滚（回滚会删除新增三张表）。
+- Swagger：[本地接口文档](http://localhost:3001/api/docs)，可导出 [OpenAPI JSON](docs/openapi.json)。
+- Postman：[AI 接口测试集合](postman/ai.postman_collection.json)，本地单租户模式按顺序运行；自动创建并清理独立测试用户。
+- 后端回归：`cd backend` 后执行 `npm run test:e2e -- --runInBand`；多租户测试无需真实模型调用。
+- `backend/.env.example` 已增加 AI 配置项。`AI_TENANT_USERS={}` 为本地单租户；配置非空映射后，未列出的用户禁止访问 AI 接口。
+- AI 管理员使用服务端 `AI_ADMIN_USER_IDS` 明确授权，不根据客户端参数或可编辑的业务 profile 自动提权。
 
 ---
 
@@ -82,7 +96,8 @@ project1/
 │       │   ├── dto/bar-chart-query.dto.ts
 │       │   ├── dto/bubble-chart-query.dto.ts
 │       │   └── dashboard.service.ts  # 聚合、组合过滤与层级树构建
-│       ├── migrations/               # 建表、约束、pgvector 扩展
+│       ├── ai-agent/                 # 独立 AI 实体、DTO、权限、CRUD、模型适配、Redis/Checkpointer
+│       ├── migrations/               # 建表、约束、pgvector 扩展及 AI 历史兼容迁移
 │       └── common/guards/jwt-auth.guard.ts
 │
 └── frontend/                         # Next.js 前端 (:3000)
@@ -251,22 +266,23 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 
 本地联调已通过 DeepSeek `/models` 可用性检查及项目 `/api/ai-agent/chat` 两轮真实对话验证。若 API Key 缺失、无效或供应商不可访问，后端会返回明确的 502 错误，而不会将密钥返回给前端。
 
-会话数据保存在 PostgreSQL 的 `ai_chat_sessions` 和 `ai_chat_messages` 表中。浏览器只在 localStorage 保存当前会话 ID、窗口状态和未发送草稿，正式消息记录以数据库为准。
+会话数据保存在 PostgreSQL 的 `ai_chat_session` 和 `ai_chat_messages` 表中（旧会话表已兼容迁移）。浏览器只在 localStorage 保存当前会话 ID、窗口状态和未发送草稿，正式消息记录以数据库为准。
 
 AI Agent API：
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/api/ai-agent/sessions` | 创建会话 |
-| GET | `/api/ai-agent/sessions` | 获取当前用户会话 |
+| GET | `/api/ai-agent/sessions` | 分页获取当前用户会话 |
 | GET | `/api/ai-agent/sessions/:id` | 加载会话和历史消息 |
+| PATCH | `/api/ai-agent/sessions/:id` | 修改会话、关闭会话并清理缓存 |
 | DELETE | `/api/ai-agent/sessions/:id` | 删除会话 |
 | POST | `/api/ai-agent/chat` | 发送消息并调用当前模型 |
 | POST | `/api/ai-agent/files` | 上传聊天附件 |
 
 附件支持 PDF、TXT、CSV、PNG、JPG/JPEG；一次最多 5 个，单文件最大 10 MB。附件存放在后端 `uploads/ai-agent` 目录，该目录不应提交到版本库。
 
-当前 24 条后端接口已经全部纳入实时 Swagger 与 OpenAPI JSON，包含请求 DTO、字段校验约束、JWT 安全标记、路径/查询参数、成功响应及常见异常响应。上一阶段的打印与 Postman 交付物仍保留在仓库中：
+当前 43 条后端接口已经纳入实时 Swagger 与 OpenAPI JSON；本次新增的记忆、任务、审计、状态和业务工具接口详见 [AI 文档](docs/ai-foundation.md)。上一阶段的打印与 Postman 交付物仍保留在仓库中，不能代替本次新增接口的最新文档：
 
 - `docs/openapi.json`：从运行中的 NestJS 服务导出的 OpenAPI 3 文档
 - `output/pdf/swagger.pdf`：上一阶段 18 条基础接口的 A4 Swagger 打印版
@@ -281,7 +297,7 @@ node scripts/export-openapi.mjs ../docs/openapi.json
 
 ### Postman 自动化接口测试
 
-`postman/api.postman_collection.json` 覆盖全部 18 条 API，共 90 个测试请求、450 条自动断言，平均每条接口 5 个场景。测试范围包括连通性与状态码、空值与非法格式、JWT 权限、返回 JSON 内容与结构、业务值、响应时间，以及测试数据的 CRUD 创建和清理。
+`postman/api.postman_collection.json` 覆盖原有 18 条业务 API，共 90 个测试请求、450 条自动断言，平均每条接口 5 个场景；本次 AI 功能另见 `postman/ai.postman_collection.json`。测试范围包括连通性与状态码、空值与非法格式、JWT 权限、返回 JSON 内容与结构、业务值、响应时间，以及测试数据的 CRUD 创建和清理。
 
 ```bash
 cd postman
@@ -516,9 +532,9 @@ const NAV_TABS = [
 
 ## 已知说明
 
-- Redis 容器和环境变量已经准备完成，但当前业务没有使用 Redis 缓存或会话。
-- LangGraph 和大模型属于后续 Agent 功能选型，当前业务任务尚未集成 Agent 模块。
+- AI 模块已接入 Redis；会话保留最近 10 轮问答，默认 2 小时；聊天结果缓存默认 10 分钟。Redis 不可用时聊天回退 PostgreSQL，任务状态接口明确返回 503。
+- 已接入多模型基础对话和 LangGraph Checkpointer 适配；完整任务编排、意图识别及 `ai:llm_cache:` 模型调用缓存不在本次范围内。
 - Company Data Explorer 当前提供 `Bar chart` / `Bubble hierarchy` Tab；两个视图共享 level、country、city、成立年份、年收入和员工数量过滤状态。
 - D3 层级气泡图参考 Observable Zoomable Circle Packing 的 pack 布局、焦点切换和插值缩放逻辑，并适配当前 MUI Dashboard 风格。
-- 前端全项目 lint 为 0 错误、Dashboard 计算测试 4/4 通过、Next.js 生产构建通过；后端构建和 E2E 12/12 通过。
+- 本次验收命令和结果见 [AI 验收文档](docs/ai-foundation.md)，不以历史测试数量作为当前接口覆盖率。
 - `.env` 不提交到 Git；请从 `backend/.env.example` 复制并设置生产环境专用的 `JWT_SECRET`。

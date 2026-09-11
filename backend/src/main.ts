@@ -26,13 +26,15 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dashboard API')
     .setDescription(
-      'Authentication, user management, company management, and dashboard aggregation APIs.',
+      'Authentication, business management, dashboard aggregation, tenant-isolated AI records, conversations and read-only AI tools.',
     )
     .setVersion('1.0')
     .addTag('Auth', 'Registration, login, and current-user endpoints')
     .addTag('Users', 'User management endpoints')
     .addTag('Companies', 'Company and relationship management endpoints')
     .addTag('Dashboard', 'Dashboard aggregation endpoints')
+    .addTag('AI Records', 'Tenant/user-scoped memory, task, state and retained audit CRUD')
+    .addTag('AI Tools', 'Allow-listed read-only calls to existing application services')
     .addTag(
       'AI Agent',
       'Persistent conversations, model chat, and file uploads',

@@ -6,6 +6,9 @@ import { Company } from '../company/company.entity';
 import { Relationship } from '../company/relationship.entity';
 import { AiChatSession } from '../ai-agent/entities/ai-chat-session.entity';
 import { AiChatMessage } from '../ai-agent/entities/ai-chat-message.entity';
+import { AiUserMemory } from '../ai-agent/entities/ai-user-memory.entity';
+import { AiTaskRecord } from '../ai-agent/entities/ai-task-record.entity';
+import { AiOperationAudit } from '../ai-agent/entities/ai-operation-audit.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -21,6 +24,9 @@ export default new DataSource({
     Relationship,
     AiChatSession,
     AiChatMessage,
+    AiUserMemory,
+    AiTaskRecord,
+    AiOperationAudit,
   ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false,

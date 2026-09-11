@@ -1136,7 +1136,61 @@
         },
         "responses": {
           "201": {
-            "description": "Session created"
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "modelProvider": {
+                      "type": "string"
+                    },
+                    "modelName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "closed"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing, invalid, or expired JWT"
@@ -1154,10 +1208,125 @@
       },
       "get": {
         "operationId": "AiChatController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Own user ID only; tenant admins may filter audit logs by another member",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Sessions ordered by recent activity"
+            "description": "Scoped paginated records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "tenantId": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "modelProvider": {
+                            "type": "string"
+                          },
+                          "modelName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "closed"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer"
+                          },
+                          "messages": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing, invalid, or expired JWT"
@@ -1175,6 +1344,100 @@
       }
     },
     "/api/ai-agent/sessions/{id}": {
+      "patch": {
+        "operationId": "AiChatController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "modelProvider": {
+                      "type": "string"
+                    },
+                    "modelName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "closed"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update own session; closing clears short-term memory",
+        "tags": [
+          "AI Agent"
+        ]
+      },
       "get": {
         "operationId": "AiChatController_get",
         "parameters": [
@@ -1189,7 +1452,61 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "modelProvider": {
+                      "type": "string"
+                    },
+                    "modelName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "closed"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing, invalid, or expired JWT"
@@ -1219,7 +1536,19 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing, invalid, or expired JWT"
@@ -1310,11 +1639,1823 @@
           "AI Agent"
         ]
       }
+    },
+    "/api/ai-agent/memories": {
+      "post": {
+        "operationId": "AiRecordsController_createMemory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create own memory",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "get": {
+        "operationId": "AiRecordsController_listMemory",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Own user ID only; tenant admins may filter audit logs by another member",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped paginated records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "tenantId": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "version": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Paginate own memories; optional userId filter cannot widen scope",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/memories/{id}": {
+      "get": {
+        "operationId": "AiRecordsController_getMemory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get own memory by UUID",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "patch": {
+        "operationId": "AiRecordsController_updateMemory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update own memory",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "delete": {
+        "operationId": "AiRecordsController_deleteMemory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete own memory",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/tasks": {
+      "post": {
+        "operationId": "AiRecordsController_createTask",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "input": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "nullable": true
+                    },
+                    "errorSummary": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create own task",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "get": {
+        "operationId": "AiRecordsController_listTask",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Own user ID only; tenant admins may filter audit logs by another member",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped paginated records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "tenantId": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "running",
+                              "completed",
+                              "failed",
+                              "cancelled"
+                            ]
+                          },
+                          "progress": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "input": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "result": {
+                            "type": "object",
+                            "additionalProperties": true,
+                            "nullable": true
+                          },
+                          "errorSummary": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "version": {
+                            "type": "integer"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Paginate own tasks; optional userId filter cannot widen scope",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/tasks/{id}": {
+      "get": {
+        "operationId": "AiRecordsController_getTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "input": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "nullable": true
+                    },
+                    "errorSummary": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get own task by UUID",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "patch": {
+        "operationId": "AiRecordsController_updateTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "input": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "nullable": true
+                    },
+                    "errorSummary": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update own task",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "delete": {
+        "operationId": "AiRecordsController_deleteTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete own task",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/tasks/{id}/state": {
+      "get": {
+        "operationId": "AiRecordsController_getState",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "nullable": true
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "expired": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Read temporary task state; expired state returns null",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "put": {
+        "operationId": "AiRecordsController_putState",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskStateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "taskId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "nullable": true
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "expired": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Write temporary task state with TTL; Redis outage returns 503",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/audits": {
+      "post": {
+        "operationId": "AiRecordsController_createAudit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "actorId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource": {
+                      "type": "string"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure"
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Administrator only: append a manual audit event",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "get": {
+        "operationId": "AiRecordsController_listAudit",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Own user ID only; tenant admins may filter audit logs by another member",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped paginated records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "tenantId": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "actorId": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resource": {
+                            "type": "string"
+                          },
+                          "resourceId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "success",
+                              "failure"
+                            ]
+                          },
+                          "requestId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "details": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "correction": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "deletedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Own audit logs; administrators can see all logs in their tenant",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/audits/{id}": {
+      "get": {
+        "operationId": "AiRecordsController_getAudit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "actorId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource": {
+                      "type": "string"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure"
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Read an authorized audit event, including retained corrections",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "patch": {
+        "operationId": "AiRecordsController_correctAudit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "actorId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource": {
+                      "type": "string"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure"
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Administrator only: add correction without changing original event",
+        "tags": [
+          "AI Records"
+        ]
+      },
+      "delete": {
+        "operationId": "AiRecordsController_deleteAudit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized record/result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tenantId": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "actorId": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource": {
+                      "type": "string"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure"
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "correction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields, pagination, or attempted ownership override"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Tenant membership or administrator permission required"
+          },
+          "404": {
+            "description": "Record not found within the authorized scope"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Administrator only: mark deleted with a reason; retain evidence",
+        "tags": [
+          "AI Records"
+        ]
+      }
+    },
+    "/api/ai-agent/tools/companies/filter": {
+      "post": {
+        "operationId": "AiToolsController_companies",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BarChartQueryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "data: existing aggregation response; cacheHit: boolean"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Read-only company aggregation through the existing DashboardService",
+        "tags": [
+          "AI Tools"
+        ]
+      }
     }
   },
   "info": {
     "title": "Dashboard API",
-    "description": "Authentication, user management, company management, and dashboard aggregation APIs.",
+    "description": "Authentication, business management, dashboard aggregation, tenant-isolated AI records, conversations and read-only AI tools.",
     "version": "1.0",
     "contact": {}
   },
@@ -1334,6 +3475,14 @@
     {
       "name": "Dashboard",
       "description": "Dashboard aggregation endpoints"
+    },
+    {
+      "name": "AI Records",
+      "description": "Tenant/user-scoped memory, task, state and retained audit CRUD"
+    },
+    {
+      "name": "AI Tools",
+      "description": "Allow-listed read-only calls to existing application services"
     },
     {
       "name": "AI Agent",
@@ -2373,6 +4522,37 @@
           }
         }
       },
+      "UpdateSessionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Supply chain analysis"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "openai",
+              "deepseek",
+              "qwen",
+              "kimi"
+            ],
+            "default": "mock"
+          },
+          "model": {
+            "type": "string",
+            "example": "deepseek-chat"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "closed"
+            ]
+          }
+        }
+      },
       "ChatAttachmentDto": {
         "type": "object",
         "properties": {
@@ -2403,6 +4583,14 @@
       "SendMessageDto": {
         "type": "object",
         "properties": {
+          "companyQuery": {
+            "description": "Explicit read-only input for calling the existing company aggregation service",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BarChartQueryDto"
+              }
+            ]
+          },
           "sessionId": {
             "type": "string"
           },
@@ -2420,6 +4608,168 @@
         "required": [
           "sessionId",
           "message"
+        ]
+      },
+      "CreateMemoryDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "value"
+        ]
+      },
+      "UpdateMemoryDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTaskDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "UpdateTaskDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "errorSummary": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskStateDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "ttlSeconds": {
+            "type": "number",
+            "default": 7200,
+            "minimum": 1,
+            "maximum": 604800
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "CreateAuditDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "action",
+          "resource",
+          "outcome"
+        ]
+      },
+      "AuditCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Required reason; original event fields remain immutable"
+          }
+        },
+        "required": [
+          "reason"
         ]
       }
     }

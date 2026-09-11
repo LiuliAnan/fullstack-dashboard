@@ -6,6 +6,8 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
+  Query,
   ParseUUIDPipe,
   Post,
   Req,
@@ -18,7 +20,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -33,6 +34,9 @@ import { CreateSessionDto } from '../dto/create-session.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { AiSessionService } from '../services/ai-session.service';
 import { AiChatService } from '../services/ai-chat.service';
+import { AiScopeGuard } from '../security/ai-scope.guard';
+import { AiQueryDto, UpdateSessionDto } from '../dto/records.dto';
+import { AiRecordResponse } from '../dto/ai-swagger';
 
 interface AuthRequest {
   user: { id: number; email: string };
@@ -50,7 +54,7 @@ const allowedMimeTypes = new Set([
 @ApiTags('AI Agent')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Missing, invalid, or expired JWT' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AiScopeGuard)
 @Controller('api/ai-agent')
 export class AiChatController {
   constructor(
@@ -60,25 +64,40 @@ export class AiChatController {
 
   @Post('sessions')
   @ApiOperation({ summary: 'Create an AI chat session' })
-  @ApiCreatedResponse({ description: 'Session created' })
+  @AiRecordResponse('session', false, 201)
   create(@Req() req: AuthRequest, @Body() dto: CreateSessionDto) {
     return this.sessions.create(req.user.id, dto);
   }
 
   @Get('sessions')
   @ApiOperation({ summary: 'List the current user chat sessions' })
-  @ApiOkResponse({ description: 'Sessions ordered by recent activity' })
-  list(@Req() req: AuthRequest) {
-    return this.sessions.list(req.user.id);
+  @AiRecordResponse('session', true)
+  list(@Req() req: AuthRequest, @Query() query: AiQueryDto) {
+    return this.sessions.list(req.user.id, query);
+  }
+
+  @Patch('sessions/:id')
+  @AiRecordResponse('session')
+  @ApiOperation({
+    summary: 'Update own session; closing clears short-term memory',
+  })
+  update(
+    @Req() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSessionDto,
+  ) {
+    return this.sessions.update(id, req.user.id, dto);
   }
 
   @Get('sessions/:id')
+  @AiRecordResponse('session')
   @ApiOperation({ summary: 'Load one chat session with message history' })
   get(@Req() req: AuthRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.sessions.getOwned(id, req.user.id, true);
   }
 
   @Delete('sessions/:id')
+  @AiRecordResponse('deleted')
   @ApiOperation({ summary: 'Delete one chat session and its messages' })
   remove(@Req() req: AuthRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.sessions.remove(id, req.user.id);

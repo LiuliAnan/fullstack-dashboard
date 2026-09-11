@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { BarChartQueryDto } from '../../dashboard/dto/bar-chart-query.dto';
 import {
   IsArray,
   IsInt,
@@ -19,6 +20,15 @@ export class ChatAttachmentDto {
 }
 
 export class SendMessageDto {
+  @ApiPropertyOptional({
+    type: BarChartQueryDto,
+    description:
+      'Explicit read-only input for calling the existing company aggregation service',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BarChartQueryDto)
+  companyQuery?: BarChartQueryDto;
   @ApiProperty() @IsUUID() sessionId: string;
   @ApiProperty({ maxLength: 10000 })
   @IsString()

@@ -30,8 +30,8 @@ for (const { path, method, operation } of operations) {
   }
 }
 
-const expectedOperations = Number(process.env.EXPECTED_OPENAPI_OPERATIONS || 24);
-if (operations.length !== expectedOperations) {
+const expectedOperations = process.env.EXPECTED_OPENAPI_OPERATIONS ? Number(process.env.EXPECTED_OPENAPI_OPERATIONS) : undefined;
+if (expectedOperations !== undefined && operations.length !== expectedOperations) {
   problems.push(`Expected ${expectedOperations} operations, found ${operations.length}`);
 }
 

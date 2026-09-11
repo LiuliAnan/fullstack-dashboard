@@ -1,0 +1,1676 @@
+{
+  "info": {
+    "name": "AI Foundation",
+    "description": "Run in order in local single-tenant mode (AI_TENANT_USERS={}). Creates a unique test account and removes it at the end. Mock chat only, no model charges. Multi-tenant/admin, TTL, concurrency and Checkpointer acceptance is in backend/test/ai-foundation.e2e-spec.ts. Do not export populated tokens.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "password",
+      "value": "AiPostman12345"
+    },
+    {
+      "key": "maxResponseMs",
+      "value": "5000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Register isolated test account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/signup",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"confirmPassword\": \"{{password}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"email\", \"ai-postman-\" + pm.variables.replaceIn(\"{{$guid}}\") + \"@example.com\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"userId\", pm.response.json().data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().data.accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/sessions",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"provider\": \"mock\",\n  \"title\": \"API acceptance\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"sessionId\", pm.response.json().id);",
+              "pm.test(\"Server owner\", () => pm.expect(pm.response.json().userId).to.eql(Number(pm.collectionVariables.get(\"userId\"))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions?page=1&pageSize=5",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Pagination\", () => pm.expect(pm.response.json()).to.have.all.keys(\"items\",\"total\",\"page\",\"pageSize\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/{{sessionId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"History array\", () => pm.expect(pm.response.json().messages).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session rename",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/{{sessionId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Renamed\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Updated title\", () => pm.expect(pm.response.json().title).to.eql(\"Renamed\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session invalid UUID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/not-a-uuid",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session invalid paging",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions?pageSize=101",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owner override denied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/sessions",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"forged\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat first round",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/chat",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"message\": \"Hello\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Assistant reply\", () => pm.expect(pm.response.json().assistantMessage.role).to.eql(\"assistant\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat second round",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/chat",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"message\": \"Continue\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Multi-round context\", () => pm.expect(pm.response.json().assistantMessage.content.text).to.include(\"2 轮\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat empty input",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/chat",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"message\": \" \"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Call company service",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tools/companies/filter",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dimension\": \"level\",\n  \"filter\": {}\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Business result\", () => pm.expect(pm.response.json()).to.have.all.keys(\"data\",\"cacheHit\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Company tool cached",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tools/companies/filter",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dimension\": \"level\",\n  \"filter\": {}\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Cache hit\", () => pm.expect(pm.response.json().cacheHit).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Company tool invalid dimension",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tools/companies/filter",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dimension\": \"invalid\",\n  \"filter\": {}\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/memories",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"kind\": \"preference\",\n  \"key\": \"language\",\n  \"value\": {\n    \"language\": \"zh\"\n  },\n  \"sessionId\": \"{{sessionId}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"memoryId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/memories?page=1&pageSize=5",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Items array\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/memories/{{memoryId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/memories/{{memoryId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"value\": {\n    \"language\": \"en\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "memory invalid body",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/memories",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "task create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"acceptance\",\n  \"sessionId\": \"{{sessionId}}\",\n  \"input\": {}\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"taskId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "task list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/tasks?page=1&pageSize=5",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Items array\", () => pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "task get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "task update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"running\",\n  \"progress\": 25\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "task invalid body",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task state write",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}/state",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"state\": {\n    \"step\": 1\n  },\n  \"ttlSeconds\": 60\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"State written\", () => pm.expect(pm.response.json().state.step).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task state read",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}/state",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"State restored\", () => pm.expect(pm.response.json().state.step).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task invalid TTL",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}/state",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"state\": {},\n  \"ttlSeconds\": 0\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task complete",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"completed\",\n  \"result\": {\n    \"ok\": true\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.test(\"Progress complete\", () => pm.expect(pm.response.json().progress).to.eql(100));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task invalid transition",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"running\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/audits?pageSize=5",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));",
+              "pm.collectionVariables.set(\"auditId\", pm.response.json().items[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit get",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/audits/{{auditId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordinary user cannot forge audit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/audits",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"action\": \"forge\",\n  \"resource\": \"test\",\n  \"outcome\": \"success\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordinary user cannot edit audit",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/audits/{{auditId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"forbidden\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordinary user cannot delete audit",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/audits/{{auditId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"forbidden\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session close",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/{{sessionId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"closed\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Closed session cannot send",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/ai-agent/chat",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"message\": \"closed\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/memories/{{memoryId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deleted task state denied",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/tasks/{{taskId}}/state",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/{{sessionId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deleted session not found",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions/{{sessionId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "JWT required",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/ai-agent/sessions",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Remove only this run test account",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{userId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"JSON response\", () => pm.response.to.be.json);",
+              "pm.test(\"Response body is an object\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+              "pm.test(\"Response time budget\", () => pm.expect(pm.response.responseTime).to.be.below(Number(pm.collectionVariables.get(\"maxResponseMs\") || 5000)));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
